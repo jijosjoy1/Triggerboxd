@@ -48,7 +48,7 @@ Verified baseline plus catalog: 47 application tests, 108 embedded PostgreSQL as
 
 ### 1 — Data and spoiler foundation
 
-Implementation milestone (2026-10-12): additive migration 20261012190000_product_foundation.sql and routes PATCH warnings, POST reveal, GET/PUT family-vote prepared. Eleven categories retain the historical six. Descriptor/representation schemas added; representation writing remains deferred. Atomic single-category patch, protected family votes, filtered SQL summaries/reveals and safe sitemap are implemented. Legacy form updates preserve new-category assessments and retained metadata; contradictory None updates are rejected.
+Implementation milestone (2026-10-12): additive migration 20261012162814_product_foundation.sql and routes PATCH warnings, POST reveal, GET/PUT family-vote prepared. Eleven categories retain the historical six. Descriptor/representation schemas added; representation writing remains deferred. Atomic single-category patch, protected family votes, filtered SQL summaries/reveals and safe sitemap are implemented. Legacy form updates preserve new-category assessments and retained metadata; contradictory None updates are rejected.
 
 Checks: 53 application tests, 146 embedded database assertions, historical migration preservation check, typecheck and production build pass. Hosted migration and authenticated browser verification remain pending. The old UI has not yet been replaced. Synopsis is withheld from default summaries; restoring its explicit reveal action is Phase 2 work. Family aggregates are withheld globally pending disclosure-policy review. Comments, timeline, representation mutation, expanded demographic descriptors and owner-reporting UI are not shipped by this milestone.
 
@@ -97,3 +97,5 @@ Acceptance: no fabricated verdicts, no hidden category leaks, unsupported APIs u
 ## Execution boundaries
 
 Each phase produces tests and a short evidence report. Work on one phase at a time. Do not deploy a partly migrated database/client combination. Licensing confirmation, category-spoiler conflict resolution and verified-absence wording remain explicit product gates. No new infrastructure is required.
+
+Hosted Phase 1 applied 2026-10-12: category count 11; temporary CREATE permissions revoked. Supabase migration version 20261012162814 matches the local filename. Phase 2 UI integration underway.

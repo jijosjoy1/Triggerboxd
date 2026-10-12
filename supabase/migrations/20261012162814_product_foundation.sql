@@ -1,5 +1,8 @@
 -- Additive product foundation. No notes or public individual contributor identities.
 begin;
+-- Managed postgres is not a superuser: function ownership transfer requires
+-- CREATE for the new owner. Grant only inside this transaction and revoke below.
+grant create on schema private,public to triggerboxd_writer,triggerboxd_reader;
 alter table public.warning_categories drop constraint warning_categories_sort_order_check;
 alter table public.warning_categories add constraint warning_categories_sort_order_check check(sort_order between 1 and 100);
 insert into public.warning_categories values
@@ -271,4 +274,5 @@ revoke all on function private.patch_warning(uuid,bigint,boolean,text,smallint,s
 grant execute on function private.patch_warning(uuid,bigint,boolean,text,smallint,smallint,text[],text),public.patch_warning(uuid,bigint,boolean,text,smallint,smallint,text[],text),
  private.get_my_family_vote(uuid),public.get_my_family_vote(uuid),private.put_family_vote(uuid,bigint,boolean,smallint,text),public.put_family_vote(uuid,bigint,boolean,smallint,text) to authenticated;
 grant execute on function private.reveal_movie_warnings(uuid,text[],smallint),public.reveal_movie_warnings(uuid,text[],smallint) to anon,authenticated;
+revoke create on schema private,public from triggerboxd_writer,triggerboxd_reader;
 commit;
