@@ -1,5 +1,6 @@
-import { CATEGORY_SLUGS, type ApiErrorCode, type CategoryRating, type CategorySlug,
+import { CATEGORY_SLUGS, WARNING_DESCRIPTOR_IDS, type ApiErrorCode, type CategoryRating, type CategorySlug,
   type DeleteContributionInput, type ImportMovieInput, type PutContributionInput, type Severity } from './contracts';
+import type { PatchWarningInput, RevealWarningsInput, FamilyVoteInput } from './contracts';
 
 export const MAX_JSON_BODY_BYTES = 8 * 1024;
 
@@ -55,7 +56,7 @@ export function parseContributionInput(value: unknown): PutContributionInput {
     throw new ValidationError('watched', 'Confirm you watched this movie.', 'WATCH_CONFIRMATION_REQUIRED');
   }
   if (!Array.isArray(record.ratings) || record.ratings.length < 1 || record.ratings.length > CATEGORY_SLUGS.length) {
-    throw new ValidationError('ratings', 'Assess 1–6 categories; use delete to remove every assessment.');
+    throw new ValidationError('ratings', 'Assess supported categories; use delete to remove every assessment.');
   }
   const seen = new Set<CategorySlug>();
   const ratings: CategoryRating[] = record.ratings.map(value => {
@@ -69,6 +70,38 @@ export function parseContributionInput(value: unknown): PutContributionInput {
     return { category, severity: integer(rating.severity, 'severity', 0, 3) as Severity };
   });
   return { expectedRevision, watched: true, ratings };
+}
+
+export function parsePatchWarningInput(value: unknown): PatchWarningInput {
+  const record = object(value, ['expectedRevision', 'watched', 'category', 'severity', 'spoilerLevel', 'descriptors']);
+  const legacy = parseContributionInput({ expectedRevision: record.expectedRevision, watched: record.watched,
+    ratings: [{ category: record.category, severity: record.severity }] });
+  if (!Array.isArray(record.descriptors) || record.descriptors.length > 8 ||
+      record.descriptors.some(item => typeof item !== 'string' || !/^[a-z][a-z0-9_]{0,63}$/.test(item) ||
+        !WARNING_DESCRIPTOR_IDS[legacy.ratings[0].category].includes(item)) ||
+      new Set(record.descriptors).size !== record.descriptors.length || (legacy.ratings[0].severity === 0 && record.descriptors.length > 0)) {
+    throw new ValidationError('descriptors', 'Choose supported descriptors once.');
+  }
+  return { ...legacy.ratings[0], expectedRevision: legacy.expectedRevision, watched: true,
+    spoilerLevel: integer(record.spoilerLevel, 'spoilerLevel', 0, 2) as 0 | 1 | 2,
+    descriptors: record.descriptors as string[] };
+}
+
+export function parseRevealWarningsInput(value: unknown): RevealWarningsInput {
+  const record = object(value, ['categories', 'level']);
+  if (!Array.isArray(record.categories) || record.categories.length < 1 || record.categories.length > CATEGORY_SLUGS.length ||
+      record.categories.some(item => typeof item !== 'string' || !CATEGORY_SLUGS.includes(item as CategorySlug)) ||
+      new Set(record.categories).size !== record.categories.length) {
+    throw new ValidationError('categories', 'Choose supported categories once.');
+  }
+  return { categories: record.categories as CategorySlug[], level: integer(record.level, 'level', 1, 2) as 1 | 2 };
+}
+
+export function parseFamilyVoteInput(value: unknown): FamilyVoteInput {
+  const record = object(value, ['expectedRevision', 'watched', 'value']);
+  if (record.watched !== true) throw new ValidationError('watched', 'Confirm you watched this movie.', 'WATCH_CONFIRMATION_REQUIRED');
+  return { expectedRevision: integer(record.expectedRevision, 'expectedRevision', 0), watched: true,
+    value: integer(record.value, 'value', 1, 5) as 1 | 2 | 3 | 4 | 5 };
 }
 
 export function parseDeleteContributionInput(value: unknown): DeleteContributionInput {

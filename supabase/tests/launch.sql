@@ -53,8 +53,8 @@ select test.assert('migration backfills existing profiles without touching auth'
   and exists(select 1 from private.user_access where user_id='00000000-0000-4000-8000-000000000099'));
 
 set local role anon;
-select test.assert('anonymous sees six categories', (select count(*)=6 from public.warning_categories));
-select test.assert('new movie has six Unknown warnings', (select jsonb_array_length(value->'warnings')=6 and (value->>'contributorCount')::integer=0
+select test.assert('anonymous sees eleven categories', (select count(*)=11 from public.warning_categories));
+select test.assert('new movie has eleven Unknown warnings', (select jsonb_array_length(value->'warnings')=11 and (value->>'contributorCount')::integer=0
   and not exists(select 1 from jsonb_array_elements(value->'warnings') w where w->'severity'<>'null'::jsonb or w->>'count'<>'0' or w->>'provisional'<>'false')
   from (select public.get_movie_summary('10000000-0000-4000-8000-000000000001') value) s));
 select test.denied('anon cannot read raw contributions','select * from public.contributions','permission denied');
@@ -190,9 +190,9 @@ begin
     actor:=md5('aggregate-vector-user-'||i)::uuid;
     insert into auth.users(id,email_confirmed_at) values(actor,now()) on conflict(id) do nothing;
     insert into public.contributions(user_id,movie_id,revision,watched) values(actor,'10000000-0000-4000-8000-000000000002',nextval('private.contribution_revision'),true) returning id into contribution;
-    insert into public.category_ratings values(contribution,'nudity',p_values[i]);
+    insert into public.category_ratings(contribution_id,category_slug,severity) values(contribution,'nudity',p_values[i]);
   end loop;
-  select w - 'category' into actual from jsonb_array_elements(public.get_movie_summary('10000000-0000-4000-8000-000000000002')->'warnings') w where w->>'category'='nudity';
+  select w - 'category' - 'descriptors' into actual from jsonb_array_elements(public.get_movie_summary('10000000-0000-4000-8000-000000000002')->'warnings') w where w->>'category'='nudity';
   return actual=p_expected;
 end $$;
 select test.assert('[] -> Unknown',test.vector('{}','{"severity":null,"count":0,"distribution":[0,0,0,0],"provisional":false,"disputed":false}'));

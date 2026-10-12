@@ -31,6 +31,14 @@ try {
   const files = (await readdir(path.join(root, 'migrations'))).filter(f => f.endsWith('.sql')).sort();
   if (!files.length) throw new Error('No migrations found');
   for (const file of files) {
+    if (file.includes('product_foundation')) {
+      await db.exec(`
+        insert into auth.users(id,email_confirmed_at) values('90000000-0000-4000-8000-000000000001',now());
+        insert into public.movies(id,tmdb_id,title,original_title) values('90000000-0000-4000-8000-000000000002',99999,'Migration preservation fixture','Migration preservation fixture');
+        insert into public.contributions(id,user_id,movie_id,revision,watched) values('90000000-0000-4000-8000-000000000003','90000000-0000-4000-8000-000000000001','90000000-0000-4000-8000-000000000002',1,true);
+        insert into public.category_ratings(contribution_id,category_slug,severity) values('90000000-0000-4000-8000-000000000003','suicide_self_harm',2);
+      `);
+    }
     const sql = await readFile(path.join(root, 'migrations', file), 'utf8');
     if (!sql.trim()) throw new Error(`Empty migration: ${file}`);
     await db.exec(sql);
@@ -41,11 +49,21 @@ try {
     }
     console.log(`APPLIED ${file}`);
   }
-  const results = await db.exec(await readFile(path.join(root, 'tests', 'launch.sql'), 'utf8'));
+  const preserved = await db.query(`select severity,spoiler_level from public.category_ratings where contribution_id='90000000-0000-4000-8000-000000000003' and category_slug='suicide_self_harm'`);
+  if (preserved.rows[0]?.severity !== 2 || preserved.rows[0]?.spoiler_level !== 0) throw new Error('Historical assessment lost during migration');
+  console.log('PASS historical assessment preserved across additive migration');
+  await db.exec(`delete from auth.users where id='90000000-0000-4000-8000-000000000001'; delete from public.movies where id='90000000-0000-4000-8000-000000000002';`);
+  const results = [];
+  for (const testFile of ['launch.sql','product-foundation.sql']) {
+    results.push(...await db.exec(await readFile(path.join(root, 'tests', testFile), 'utf8')));
+  }
   const assertions = results.flatMap(result => result.rows ?? []).filter(row => 'passed' in row);
   if (!assertions.length) throw new Error('No database assertions were reported');
   if (process.argv.includes('--verbose')) for (const row of assertions) console.log(`PASS ${row.name}`);
   console.log(`Database assertions: ${assertions.length} passed; embedded PostgreSQL, auth fixture only.`);
+} catch (error) {
+  console.error(`Database check failed: ${error.message}${error.detail ? `; ${error.detail}` : ''}${error.where ? `; ${error.where}` : ''}`);
+  process.exitCode = 1;
 } finally {
   await db.close();
 }

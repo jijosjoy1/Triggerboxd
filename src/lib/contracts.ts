@@ -2,15 +2,31 @@
 export const CATEGORY_SLUGS = [
   'nudity', 'sexual_content', 'sexual_violence', 'gore_graphic_violence',
   'disturbing_content', 'suicide_self_harm',
+  'animal_harm', 'drugs', 'alcohol', 'language', 'physical_violence',
 ] as const;
 
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 export type Severity = 0 | 1 | 2 | 3;
+export type WarningSpoilerLevel = 0 | 1 | 2;
+export const WARNING_DESCRIPTOR_IDS: Readonly<Record<CategorySlug, readonly string[]>> = {
+  nudity: ['male_nudity','female_nudity','partial_nudity','full_frontal_nudity','brief_nudity','prolonged_nudity','sexual_nudity','non_sexual_nudity'],
+  sexual_content: ['kissing','intimacy','sexual_activity'],
+  sexual_violence: ['rape','attempted_rape','sexual_assault','sexual_harassment','sexual_coercion','implied_sexual_violence','offscreen_sexual_violence','graphic_sexual_violence'],
+  gore_graphic_violence: ['blood','graphic_injury'],
+  disturbing_content: [], suicide_self_harm: [],
+  animal_harm: ['animal_distress','animal_injury','animal_cruelty','animal_death'],
+  drugs: ['recreational_drug_use','drug_addiction','overdose'],
+  alcohol: ['alcohol_consumption','intoxication','alcohol_abuse'],
+  language: ['profanity','slurs'],
+  physical_violence: ['physical_assault','torture','domestic_violence'],
+};
 export type SeverityDistribution = [number, number, number, number];
 
 export interface CategoryRating {
   category: CategorySlug;
   severity: Severity;
+  spoilerLevel?: WarningSpoilerLevel;
+  descriptors?: string[];
 }
 
 export interface WarningSummary {
@@ -46,6 +62,10 @@ export interface OwnContribution {
 export interface OwnContributionResult { contribution: OwnContribution | null }
 export interface PutContributionInput { expectedRevision: number; watched: true; ratings: CategoryRating[] }
 export interface DeleteContributionInput { expectedRevision: number }
+export interface PatchWarningInput extends CategoryRating { expectedRevision: number; watched: true; spoilerLevel: WarningSpoilerLevel; descriptors: string[] }
+export interface RevealWarningsInput { categories: CategorySlug[]; level: 1 | 2 }
+export interface FamilyVoteInput { expectedRevision: number; watched: true; value: 1 | 2 | 3 | 4 | 5 }
+export interface OwnFamilyVoteResult { familyVote: { revision: number; value: 1 | 2 | 3 | 4 | 5 } | null }
 export interface ImportMovieInput { tmdbId: number }
 export interface ImportMovieResult { id: string; tmdbId: number; created: boolean }
 export interface AccountStatus { status: 'active' | 'suspended'; emailVerified: boolean; displayName: string }

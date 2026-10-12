@@ -48,6 +48,10 @@ Verified baseline plus catalog: 47 application tests, 108 embedded PostgreSQL as
 
 ### 1 — Data and spoiler foundation
 
+Implementation milestone (2026-10-12): additive migration 20261012190000_product_foundation.sql and routes PATCH warnings, POST reveal, GET/PUT family-vote prepared. Eleven categories retain the historical six. Descriptor/representation schemas added; representation writing remains deferred. Atomic single-category patch, protected family votes, filtered SQL summaries/reveals and safe sitemap are implemented. Legacy form updates preserve new-category assessments and retained metadata; contradictory None updates are rejected.
+
+Checks: 53 application tests, 146 embedded database assertions, historical migration preservation check, typecheck and production build pass. Hosted migration and authenticated browser verification remain pending. The old UI has not yet been replaced. Synopsis is withheld from default summaries; restoring its explicit reveal action is Phase 2 work. Family aggregates are withheld globally pending disclosure-policy review. Comments, timeline, representation mutation, expanded demographic descriptors and owner-reporting UI are not shipped by this milestone.
+
 - [ ] Add extensible category/descriptor definitions; preserve six existing categories and old data.
 - [ ] Add rating spoiler metadata and descriptor associations; separate representation records from severity.
 - [ ] Add independent family votes with unique movie/user constraint and revision checks.
