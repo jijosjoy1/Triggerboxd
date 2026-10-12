@@ -211,7 +211,7 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
   function submit(event: FormEvent) { event.preventDefault(); void mutate('PUT'); }
   const loginUrl = `/login/?next=${encodeURIComponent(`/movies/${movieId}/#contribute`)}`;
 
-  return <section id="contribute" className="mvp-contribution" aria-labelledby="contribute-title">
+  return <section id="full-contribution" className="mvp-contribution" aria-labelledby="contribute-title">
     <span className="label">A VIEWER’S PERSPECTIVE</span><h2 id="contribute-title">{contribution ? 'Your contribution' : 'Have you watched this film?'}</h2>
     <p className="muted">Share content intensity without revealing the story. You can edit or delete your own assessment. Different cuts of a film can differ.</p>
     {message ? <p role="status" className="mvp-notice">{message}</p> : null}

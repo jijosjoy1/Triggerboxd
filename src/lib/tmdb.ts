@@ -64,6 +64,7 @@ export interface TmdbGatewayOptions {
 }
 
 export interface TmdbGateway {
+  getMoviePresentation(tmdbId: number): Promise<{ runtime: number | null; genres: string[]; certifications: string[] }>;
   getIndianCertifications(tmdbId: number): Promise<string[]>;
   searchMovies(input: { query: string; page?: number }): Promise<TmdbSearchPage>;
   getMovieDetails(tmdbId: number): Promise<TmdbMovieDetails>;
@@ -84,6 +85,26 @@ export function createTmdbGateway(options: TmdbGatewayOptions): TmdbGateway {
   const cache = new Map<string, CacheEntry>();
 
   return {
+    async getMoviePresentation(tmdbId) {
+      validateTmdbId(tmdbId);
+      const url = new URL(`/3/movie/${tmdbId}`, API_ORIGIN);
+      url.searchParams.set('append_to_response', 'release_dates');
+      const payload = await requestJson(url, accessToken, fetchImpl, timeoutMs);
+      if (!isRecord(payload) || payload.id !== tmdbId || payload.adult !== false) throw new TmdbError('UPSTREAM_ERROR');
+      const runtime = typeof payload.runtime === 'number' && Number.isInteger(payload.runtime) && payload.runtime > 0 && payload.runtime <= 10000 ? payload.runtime : null;
+      const genres = Array.isArray(payload.genres) ? payload.genres.filter(isRecord).map(g => g.name).filter((name): name is string => typeof name === 'string' && name.length > 0 && name.length <= 80).slice(0, 10) : [];
+      const certifications = new Set<string>();
+      const releases = isRecord(payload.release_dates) && Array.isArray(payload.release_dates.results) ? payload.release_dates.results : [];
+      for (const country of releases) {
+        if (!isRecord(country) || country.iso_3166_1 !== 'IN' || !Array.isArray(country.release_dates)) continue;
+        for (const release of country.release_dates) {
+          if (!isRecord(release) || typeof release.certification !== 'string') continue;
+          const label = release.certification.trim();
+          if (label && label.length <= 32 && /^[A-Za-z0-9 /+()-]+$/.test(label)) certifications.add(label);
+        }
+      }
+      return { runtime, genres, certifications: [...certifications].sort() };
+    },
     async getIndianCertifications(tmdbId): Promise<string[]> {
       validateTmdbId(tmdbId);
       const payload = await requestJson(new URL(`/3/movie/${tmdbId}/release_dates`, API_ORIGIN), accessToken, fetchImpl, timeoutMs);

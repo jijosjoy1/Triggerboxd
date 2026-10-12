@@ -63,6 +63,8 @@ Acceptance: migration preserves existing assessments; users cannot edit another 
 
 ### 2 — Compact product UI
 
+UI milestone implemented: five visible/three expandable signature questions; selective category reveal; lazy synopsis POST; eleven-category quick partial warnings with descriptors/spoiler levels; own independent family vote; historical full-form edit/delete retained under disclosure. Runtime/genres/certification share one upstream request. 57 application tests, typecheck and production build pass. Browser verified 5/3 disclosure, authenticated controls and lazy synopsis. 390px overflow check passed. Real new quick-warning/family publishing, physical Android/iOS and multi-account browser checks remain unverified. Public first-open importing, representation endpoints, public family consensus, full demographic descriptors and share UI remain pending; this is a UI milestone, not completion of every Phase 2 requirement.
+
 - [ ] Integrate five visible questions and three expanded questions; Unknown defaults for new categories.
 - [ ] Add compact factual details and separate representation section.
 - [ ] Implement quick partial contribution and independent family voting using Phase 1 contracts.
