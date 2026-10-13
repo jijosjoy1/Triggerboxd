@@ -83,6 +83,8 @@ Acceptance: malicious text rendered safely; timestamp ordering/version caveats; 
 
 ### 4 — Social sharing
 
+Basic link-sharing milestone integrated 2026-10-13: reviewed external model's MovieShare component, wired it into movie header. Canonical title/link only; native sharing availability, WhatsApp/Reddit anchors, copy/manual fallback. 64 tests and typecheck pass. Browser verified dialog opening, copy success feedback, Escape/focus restoration and 320px dialog/document widths without overflow. Actual OS native sharing and third-party posting remain unverified; no external message was sent. Downloadable image cards and final spoiler-safe OG artwork remain pending. Canonical movie links require MVP production deployment before recipients can use them on the public domain.
+
 - [ ] Native share and copy/download fallback; WhatsApp/Reddit links.
 - [ ] One 1080x1920 branded card first, from server-filtered data only.
 - [ ] Verify poster permissions and CORS before embedding; original artwork fallback.

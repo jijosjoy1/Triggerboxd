@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { MovieShare } from './movie-share';
 import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
 import { signatureQuestions, getSignatureVerdict } from '../lib/signature-questions';
@@ -81,7 +82,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   return <><Link href="/search/" className="text-link">← Find another film</Link>
     {loading ? <p role="status" className="mvp-loading">{movie ? 'Refreshing viewer reports…' : 'Loading film guide…'}</p> : null}
     {error ? <div className="mvp-notice mvp-error" role="alert"><h1>{movie ? 'Reports could not refresh.' : 'Film guide unavailable.'}</h1><p>{error}</p>{movie ? <p className="fine">The guide below is the last loaded result and may be out of date.</p> : null}<button className="mvp-secondary" type="button" onClick={refresh} disabled={loading}>Retry film guide</button></div> : null}
-    {movie ? <><header className="mvp-movie-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span aria-hidden="true">◇</span><span>No poster available</span></div>}</div><div><span className="label">FILM CONTENT GUIDE</span><h1>{movie.title}</h1>{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} <span className="divider">/</span> {movie.language?.toUpperCase() ?? 'Language unknown'}</p><a href="#contribute" className="text-link">Add your watched-film assessment →</a></div></header>
+    {movie ? <><header className="mvp-movie-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span aria-hidden="true">◇</span><span>No poster available</span></div>}</div><div><span className="label">FILM CONTENT GUIDE</span><h1>{movie.title}</h1><MovieShare key={`share-${movie.id}`} movieId={movie.id} title={movie.title} />{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} <span className="divider">/</span> {movie.language?.toUpperCase() ?? 'Language unknown'}</p><a href="#contribute" className="text-link">Add your watched-film assessment →</a></div></header>
       <aside className="mvp-notice" aria-label="Indian film certification"><p><strong>India certification</strong> · {certifications.length ? certifications.join(' / ') : 'Unavailable'}</p><p className="fine">Source: TMDb release records. Labels may differ by release or cut. This is separate from viewer warnings and is not verified against a CBFC certificate.</p></aside>
       <p className="fine">{runtime ? `${runtime} min` : 'Runtime unavailable'}{genres.length ? ` · ${genres.join(' / ')}` : ''}</p>
       <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} />
