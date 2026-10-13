@@ -102,6 +102,8 @@ Acceptance: no fabricated verdicts, no hidden category leaks, unsupported APIs u
 
 ## Execution boundaries
 
+Hosted public-import migration applied after explicit approval on 2026-10-13. Local filename matches hosted version 20261013005222. Live HTTP verification used a session with no signed-in user: Kantara (2022), previously absent from Triggerboxd, imported with HTTP 201; public guide returned HTTP 200 with eleven categories. No assessments were fabricated. Verified direct anonymous RPC execution denied, service execution allowed, importer UPDATE and schema CREATE denied. Physical-device and anonymous browser click flow remain distinct unverified checks.
+
 Each phase produces tests and a short evidence report. Work on one phase at a time. Do not deploy a partly migrated database/client combination. Licensing confirmation, category-spoiler conflict resolution and verified-absence wording remain explicit product gates. No new infrastructure is required.
 
 Hosted Phase 1 applied 2026-10-12: category count 11; temporary CREATE permissions revoked. Supabase migration version 20261012162814 matches the local filename. Phase 2 UI integration underway.
