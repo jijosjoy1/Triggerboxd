@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { MovieShare } from './movie-share';
+import { QuestionHelp } from './question-help';
+import { WatchlistButton } from './film-list';
 import { MovieScenes } from './movie-scenes';
 import { MovieRepresentation, FamilySummaryCheck } from './movie-representation';
 import { useCallback, useEffect, useState } from 'react';
@@ -39,9 +41,9 @@ export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey 
   function rows(visible: boolean) { return signatureQuestions.filter(question => question.initiallyVisible === visible).map(question => {
     const warning = effective.find(item => item.category === questionCategories[question.id]);
     const severity = warning?.severity ?? null;
-    return <li key={question.id}><div><h3>{question.prompt}</h3>{question.id === 'parents' && movieId ? <FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /> : <p className="fine">{severity === null ? 'Not shown · Check' : getSignatureVerdict(question.id, severity, 0, true)}</p>}</div>{severity !== null ? <span className={`severity severity-${SEVERITY_LABELS[severity].toLowerCase()}`}>{SEVERITY_LABELS[severity]}</span> : null}</li>;
+    return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>{question.id === 'parents' && movieId ? <FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /> : <p className="fine">{severity === null ? 'Not shown · Check' : getSignatureVerdict(question.id, severity, 0, true)}</p>}</div>{severity !== null ? <span className={`severity severity-${SEVERITY_LABELS[severity].toLowerCase()}`}>{SEVERITY_LABELS[severity]}</span> : null}</li>;
   }); }
-  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><div><span className="label">BEFORE YOU PRESS PLAY</span><h2>A quick content check</h2></div><a className="text-link" href="#contribute">Add warning →</a></div><ul className="mvp-question-list">{rows(true)}</ul><details className="mvp-product-details"><summary>Show 3 more questions</summary><ul className="mvp-question-list">{rows(false)}</ul></details><p className="fine">Community reports, not suitability guarantees. Not shown can mean unassessed or protected information. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed factual warnings · all original categories</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
+  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2><a className="text-link" href="#contribute">Contribute</a></div><ul className="mvp-question-list">{rows(true)}</ul><details className="mvp-product-details"><summary>Show 3 more questions</summary><ul className="mvp-question-list">{rows(false)}</ul></details><p className="fine guide-caveat">Community reports, not suitability guarantees. Not shown can mean unassessed or protected information. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
 }
 
 function posterUrl(path: string | null) {
@@ -53,7 +55,25 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   const [loading, setLoading] = useState(!initialMovie);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [activePanel, setActivePanel] = useState<'guide' | 'contribute'>('guide');
+  const [contributionOpened, setContributionOpened] = useState(false);
   const refresh = useCallback(() => setRetry(value => value + 1), []);
+
+  useEffect(() => {
+    function followHash() {
+      const contribute = window.location.hash === '#contribute';
+      setActivePanel(contribute ? 'contribute' : 'guide');
+      if (contribute) setContributionOpened(true);
+    }
+    followHash(); window.addEventListener('hashchange', followHash);
+    return () => window.removeEventListener('hashchange', followHash);
+  }, [movieId]);
+
+  function selectPanel(panel:'guide'|'contribute') {
+    setActivePanel(panel);
+    if (panel==='contribute') setContributionOpened(true);
+    window.history.replaceState(window.history.state,'',`${window.location.pathname}${window.location.search}${panel==='contribute'?'#contribute':'#guide'}`);
+  }
 
   useEffect(() => {
     if (initialMovie?.id === movieId && retry === 0) {
@@ -84,15 +104,18 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   return <><Link href="/search/" className="text-link">← Find another film</Link>
     {loading ? <p role="status" className="mvp-loading">{movie ? 'Refreshing viewer reports…' : 'Loading film guide…'}</p> : null}
     {error ? <div className="mvp-notice mvp-error" role="alert"><h1>{movie ? 'Reports could not refresh.' : 'Film guide unavailable.'}</h1><p>{error}</p>{movie ? <p className="fine">The guide below is the last loaded result and may be out of date.</p> : null}<button className="mvp-secondary" type="button" onClick={refresh} disabled={loading}>Retry film guide</button></div> : null}
-    {movie ? <><header className="mvp-movie-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span aria-hidden="true">◇</span><span>No poster available</span></div>}</div><div><span className="label">FILM CONTENT GUIDE</span><h1>{movie.title}</h1><MovieShare key={`share-${movie.id}`} movieId={movie.id} title={movie.title} />{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} <span className="divider">/</span> {movie.language?.toUpperCase() ?? 'Language unknown'}</p><a href="#contribute" className="text-link">Add your watched-film assessment →</a></div></header>
-      <aside className="mvp-notice" aria-label="Indian film certification"><p><strong>India certification</strong> · {certifications.length ? certifications.join(' / ') : 'Unavailable'}</p><p className="fine">Source: TMDb release records. Labels may differ by release or cut. This is separate from viewer warnings and is not verified against a CBFC certificate.</p></aside>
-      <p className="fine">{runtime ? `${runtime} min` : 'Runtime unavailable'}{genres.length ? ` · ${genres.join(' / ')}` : ''}</p>
+    {movie ? <><header className="mvp-movie-header film-detail-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span>No poster available</span></div>}</div><div><h1>{movie.title}</h1>{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} · {movie.language?.toUpperCase() ?? 'Language unknown'}{runtime ? ` · ${runtime} min` : ''}</p>{genres.length?<p className="film-genres">{genres.join(' / ')}</p>:null}<div className="film-header-actions"><WatchlistButton film={{...movie,movieId:movie.id}}/><MovieShare key={`share-${movie.id}`} movieId={movie.id} title={movie.title} /></div><details className="film-certification"><summary>India certification · {certifications.length ? certifications.join(' / ') : 'Unavailable'}</summary><p className="fine">Source: TMDb release records. Labels may differ by release or cut. Separate from viewer warnings; not verified against a CBFC certificate.</p></details></div></header>
+      <div className="film-tabs" role="tablist" aria-label="Movie sections">{(['guide','contribute'] as const).map(panel=><button key={panel} type="button" id={`tab-${panel}`} role="tab" aria-selected={activePanel===panel} aria-controls={`panel-${panel}`} tabIndex={activePanel===panel?0:-1} onClick={()=>selectPanel(panel)} onKeyDown={event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?'guide':event.key==='End'?'contribute':panel==='guide'?'contribute':'guide';selectPanel(next);document.getElementById(`tab-${next}`)?.focus();}}}>{panel==='guide'?'Guide':'Contribute'}</button>)}</div>
+      <div id="panel-guide" role="tabpanel" aria-labelledby="tab-guide" hidden={activePanel!=='guide'}>
       <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} refreshKey={retry} />
       <SynopsisReveal key={`synopsis-${movie.id}`} movieId={movie.id} />
       <MovieScenes key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
       <MovieRepresentation movieId={movie.id} refreshKey={retry} onChanged={refresh} />
+      </div>
+      <div id="panel-contribute" role="tabpanel" aria-labelledby="tab-contribute" hidden={activePanel!=='contribute'}>{contributionOpened ? <>
       <QuickContribution key={`quick-${movie.id}`} movieId={movie.id} onChanged={refresh} />
       <details className="mvp-product-details"><summary>Edit all original assessments / delete contribution</summary><RealContribution movieId={movie.id} onChanged={refresh} /></details>
+      </>:null}</div>
     </> : null}
   </>;
 }

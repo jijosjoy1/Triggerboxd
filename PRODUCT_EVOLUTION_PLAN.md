@@ -125,3 +125,10 @@ Verification: 85 application tests, 256 embedded database assertions, typecheck 
 User authorized production deployment in this turn. Cloudflare API confirmed both triggerboxd.com and www.triggerboxd.com belong to lingering-king-c5c0; Wrangler identity/self-reference now match that Worker. Runtime configuration loaded via Worker secrets, never committed. Deployed version: 05134e24-eff6-4957-be2d-cb7532fd3022. Live homepage, session, movie search, public movie API and movie guide all returned 200. Session/movie APIs are private/no-store. Live browser verified actual guide rendering.
 
 Remaining: community confirm/dispute workflow, personal preferences, metadata refresh/retention policy and TMDb licensing confirmation, physical-device/authenticated contribution QA, production CPU measurements. Main branch has not been merged; production deployment and Git feature-branch push are separate operations.
+
+## Movie browsing redesign — 2026-10-13
+- Poster grid opens a compact movie dialog: View guide, Watchlist, Contribute. Existing import and contribution APIs retained.
+- Guide / Contribute tabs preserve drafts; eight static info explanations clarify the playful questions without revealing movie-specific answers.
+- Watchlist is browser-local (200 films), explicitly disclosed in controls and privacy; account synchronization remains future work.
+- Validation: 90 tests passed; typecheck and OpenNext production build passed. Browser checks at 320/390/1280 widths covered popup, keyboard dismissal/focus, tabs, draft retention, save/reload/remove, and biryani explanation. No observed console errors. Physical Android/iOS not tested.
+- Visual comparison against generated concept: retained compact poster/dialog hierarchy and violet accents. Intentional differences: real TMDb artwork/original titles, browser-storage disclosure, existing navigation, honest warning caveats; no fabricated ratings or decorative warning icons.

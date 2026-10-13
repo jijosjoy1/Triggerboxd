@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 
 export default function SearchPage() {
   return <main id="main" className="wrap mvp-page">
-    <div className="mvp-intro"><span className="label">FIND YOUR NEXT FILM</span>
-      <h1>Know before you watch.</h1>
-      <p className="muted">Search by title, including a film’s original language. Content warnings come from viewers who have watched the film.</p>
+    <div className="film-page-heading">
+      <h1>Find a film</h1>
+      <p>Check the guide. Save for later. Share what you noticed.</p>
     </div>
     <MovieSearch />
   </main>;
