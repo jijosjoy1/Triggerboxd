@@ -77,6 +77,8 @@ Acceptance: narrow 320/390px layouts, keyboard/screen-reader labels, no overflow
 
 ### 3 — Comments, scenes and reports
 
+Prepared 2026-10-13: private movie-note storage, optional comment/start/end/version/severity, three spoiler levels, lazy paginated public timeline, selected reveal, own CRUD and private reports/corrections. Conservative category visibility combines ratings and notes inside SQL summaries, timelines and sitemap. Chronological pagination uses only disclosed timestamps. Owner moderation runbook: supabase/NOTE_MODERATION.md, revision-checked private audit actions; no public admin endpoint. Notes cap twenty active entries per user/movie and share existing write quotas. Public UI wired with 16px form controls, account-keyed own payloads and reveal reset after refresh; privacy/About updated. 75 application tests, 231 embedded database assertions, typecheck and production build pass. Hosted migration and real note creation/edit/delete/report browser flow remain pending; no fabricated film notes were published. Representation/family consensus/image-sharing/production release checks remain later work.
+
 - [ ] Plain-text bounded comments, start/end timestamps, optional version, spoiler selection.
 - [ ] Lazy timeline with category filters and selected reveal; no comment payload until needed.
 - [ ] Reports/corrections and owner hide/restore workflow with private audit trail.

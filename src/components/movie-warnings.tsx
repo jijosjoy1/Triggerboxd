@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { MovieShare } from './movie-share';
+import { MovieScenes } from './movie-scenes';
 import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
 import { signatureQuestions, getSignatureVerdict } from '../lib/signature-questions';
@@ -87,6 +88,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
       <p className="fine">{runtime ? `${runtime} min` : 'Runtime unavailable'}{genres.length ? ` · ${genres.join(' / ')}` : ''}</p>
       <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} />
       <SynopsisReveal key={`synopsis-${movie.id}`} movieId={movie.id} />
+      <MovieScenes key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
       <QuickContribution key={`quick-${movie.id}`} movieId={movie.id} onChanged={refresh} />
       <details className="mvp-product-details"><summary>Edit all original assessments / delete contribution</summary><RealContribution movieId={movie.id} onChanged={refresh} /></details>
     </> : null}
