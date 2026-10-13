@@ -104,6 +104,8 @@ Acceptance: no fabricated verdicts, no hidden category leaks, unsupported APIs u
 
 ## Execution boundaries
 
+Phase 3 hosted migration applied 2026-10-13; local version aligned to 20261013010711. Verified anonymous public scenes API HTTP 200 with an empty list, raw notes/reports inaccessible to browser roles and writer CREATE removed. Browser confirmed lazy timeline loading, honest empty state and no horizontal overflow at 390px. Actual owner note publishing/edit/delete/report and multi-account browser flows remain unverified; no fake notes were created.
+
 Hosted public-import migration applied after explicit approval on 2026-10-13. Local filename matches hosted version 20261013005222. Live HTTP verification used a session with no signed-in user: Kantara (2022), previously absent from Triggerboxd, imported with HTTP 201; public guide returned HTTP 200 with eleven categories. No assessments were fabricated. Verified direct anonymous RPC execution denied, service execution allowed, importer UPDATE and schema CREATE denied. Physical-device and anonymous browser click flow remain distinct unverified checks.
 
 Each phase produces tests and a short evidence report. Work on one phase at a time. Do not deploy a partly migrated database/client combination. Licensing confirmation, category-spoiler conflict resolution and verified-absence wording remain explicit product gates. No new infrastructure is required.
