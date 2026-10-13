@@ -35,8 +35,9 @@ export function useFilmList() {
   return { films, ready, error, toggle, clear };
 }
 
-export function WatchlistButton({film}:{film:FilmItem}) {
+export function WatchedButton({film}:{film:FilmItem}) {
   const list = useFilmList();
   const saved = list.films.some(item => item.tmdbId === film.tmdbId);
-  return <div className="film-save"><button className="film-secondary" type="button" disabled={!list.ready} aria-pressed={saved} onClick={()=>list.toggle(film)}>{saved ? '✓ In watchlist' : '+ Watchlist'}</button><span className="film-save-note">Saved on this browser</span>{list.error ? <p role="alert" className="form-error">{list.error}</p> : null}</div>;
+  return <div className="film-save"><button className="film-secondary" type="button" disabled={!list.ready} aria-pressed={saved} onClick={()=>list.toggle(film)}>{saved ? '✓ Watched' : 'Mark as watched'}</button><span className="film-save-note">Saved on this browser</span>{list.error ? <p role="alert" className="form-error">{list.error}</p> : null}</div>;
 }
+

@@ -1,8 +1,8 @@
 import { isUuid } from './validation';
 
 export type FilmItem = { tmdbId: number; movieId?: string | null; title: string; originalTitle: string; year: number | null; language: string | null; posterPath: string | null };
-export const FILM_LIST_KEY = 'triggerboxd.watchlist.v1';
-export const FILM_LIST_EVENT = 'triggerboxd:watchlist';
+export const FILM_LIST_KEY = 'triggerboxd.watched.v1';
+export const FILM_LIST_EVENT = 'triggerboxd:watched';
 export const MAX_SAVED_FILMS = 200;
 
 export function cleanFilm(value: unknown): FilmItem | null {
@@ -21,8 +21,8 @@ export function cleanFilm(value: unknown): FilmItem | null {
 export function parseFilmList(raw: string | null): FilmItem[] {
   if (!raw) return [];
   let data: unknown;
-  try { data = JSON.parse(raw); } catch { throw new Error('Saved films could not be read. Clear the watchlist to start again.'); }
-  if (!Array.isArray(data)) throw new Error('Saved films could not be read. Clear the watchlist to start again.');
+  try { data = JSON.parse(raw); } catch { throw new Error('Saved films could not be read. Clear the watched list to start again.'); }
+  if (!Array.isArray(data)) throw new Error('Saved films could not be read. Clear the watched list to start again.');
   const seen = new Set<number>();
   return data.slice(0, MAX_SAVED_FILMS).flatMap(value => {
     const movie = cleanFilm(value);
@@ -35,7 +35,7 @@ export function toggleFilm(list: FilmItem[], film: FilmItem): FilmItem[] {
   const clean = cleanFilm(film);
   if (!clean) throw new Error('This film could not be saved.');
   if (list.some(item => item.tmdbId === clean.tmdbId)) return list.filter(item => item.tmdbId !== clean.tmdbId);
-  if (list.length >= MAX_SAVED_FILMS) throw new Error('Your watchlist has 200 films. Remove one before adding another.');
+  if (list.length >= MAX_SAVED_FILMS) throw new Error('Your watched films has 200 films. Remove one before adding another.');
   return [clean, ...list];
 }
 
@@ -47,3 +47,4 @@ export function filmDestination(id: string, contribute = false) {
 export function filmPoster(path: string | null, size: 'w185' | 'w342' = 'w342') {
   return path && /^\/[A-Za-z0-9_./-]+$/.test(path) && !path.includes('..') && !path.startsWith('//') ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 }
+

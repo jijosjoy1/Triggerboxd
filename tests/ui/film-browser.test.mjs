@@ -44,6 +44,7 @@ test('every playful question has keyboard-readable help without film-specific co
 });
 test('movie popup offers real separate actions and discloses device-only saving',()=>{
   const html=renderToStaticMarkup(React.createElement(FilmDialog,{film,busy:false,error:'',onClose(){},onOpen(){}}));
-  assert.match(html,/<dialog/);assert.match(html,/View guide/);assert.match(html,/Contribute/);assert.match(html,/Watchlist saves on this browser/);
+  assert.match(html,/<dialog/);assert.match(html,/View guide/);assert.match(html,/Contribute/);assert.match(html,/Watched status saves on this browser/);
   assert.doesNotMatch(html,/synopsis|Severe|verified/i);
 });
+
