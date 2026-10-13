@@ -35,7 +35,7 @@ export type SignatureQuestion = {
 export const signatureQuestions: readonly SignatureQuestion[] = [
   {
     id: 'parents',
-    prompt: 'Watch with your parents?',
+    prompt: 'Family movie night or ceiling inspection?',
     icon: 'family',
     initiallyVisible: true,
     scale: 'family-awkwardness',
@@ -173,8 +173,8 @@ const familyAwkwardnessVerdicts: Readonly<Record<FamilyAwkwardnessLevel, string>
   1: 'An easy family watch.',
   2: 'A little awkward at times.',
   3: 'Some awkward silences.',
-  4: 'Very awkward for a family watch.',
-  5: 'You may wish you had brought a book.',
+  4: 'Suddenly, the ceiling looks interesting.',
+  5: 'Everyone has urgent business in another room.',
 };
 
 const byId = new Map(signatureQuestions.map(question => [question.id, question]));

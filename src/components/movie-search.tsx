@@ -81,7 +81,7 @@ export function MovieSearch({savedOnly = false}:{savedOnly?:boolean}) {
     actionVersion.current++; opening.current=false; setImporting(false); setSelected(null); setImportError('');
   }
   async function openMovie(contribute: boolean) {
-    if (!selected || opening.current) return;
+    if (!selected || opening.current || (contribute && !list.films.some(item => item.tmdbId === selected.tmdbId))) return;
     const movie = selected, version = ++actionVersion.current;
     opening.current=true; setImporting(true); setImportError('');
     try {

@@ -6,14 +6,14 @@ import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
 
 const label=(s:string)=>s.replaceAll('_',' ');
 async function read<T>(response:Response):Promise<T>{let body;try{body=await response.json();}catch{throw new Error('Unable to reach the service. Please try again.');}if(!response.ok)throw new Error(body.error?.message??'Unable to complete this request.');return body.data;}
-export function MovieScenes({movieId,onChanged}:{movieId:string;onChanged?:()=>void}){
+export function MovieScenes({movieId,onChanged,watched=false,readOnly=false}:{movieId:string;onChanged?:()=>void;watched?:boolean;readOnly?:boolean}){
  const [open,setOpen]=useState(false);const {session}=useAuthSession();
  return <details className="mvp-scenes" onToggle={e=>setOpen(e.currentTarget.open)}><summary>Scene timeline &amp; community notes</summary>
   <p>Timestamps are approximate and may differ between streaming, theatrical, censored or extended versions. Notes are community reports.</p>
-  {open&&<ScenePanel key={`${movieId}:${session?.user?.id??'public'}`} movieId={movieId} signedIn={!!session?.user} onChanged={onChanged}/>}
+  {open&&<ScenePanel key={`${movieId}:${session?.user?.id??'public'}`} movieId={movieId} signedIn={!!session?.user} watched={watched} readOnly={readOnly} onChanged={onChanged}/>}
  </details>;
 }
-function ScenePanel({movieId,signedIn,onChanged}:{movieId:string;signedIn:boolean;onChanged?:()=>void}){
+function ScenePanel({movieId,signedIn,onChanged,watched,readOnly}:{movieId:string;signedIn:boolean;onChanged?:()=>void;watched:boolean;readOnly:boolean}){
  const [filter,setFilter]=useState<CategorySlug|''>('');const [page,setPage]=useState<MovieNotes>({notes:[],nextOffset:null});
  const [status,setStatus]=useState('');const [loading,setLoading]=useState(false);const [epoch,setEpoch]=useState(0);
  const [viewCategory,setViewCategory]=useState<CategorySlug>('nudity');const [level,setLevel]=useState<0|1|2>(0);const [revealCategory,setRevealCategory]=useState<CategorySlug>('nudity');
@@ -62,26 +62,26 @@ function ScenePanel({movieId,signedIn,onChanged}:{movieId:string;signedIn:boolea
   {page.nextOffset!==null&&<button type="button" disabled={loading} onClick={()=>void load(page.nextOffset!)}>Load more notes</button>}
   {level>0&&<><p>Showing revealed notes for {label(viewCategory)}.</p><button type="button" onClick={refreshed}>Return to spoiler-free notes</button></>}
   {report&&<ReportForm note={report} mutate={mutate} movieId={movieId} close={()=>setReport(null)}/>}
-  {signedIn?<details onToggle={e=>setOwnOpen(e.currentTarget.open)}><summary>Add or manage your notes</summary>{ownOpen&&<OwnNotes path={path} mutate={mutate} onSaved={refreshed}/>}</details>:<a href={`/login/?returnTo=${encodeURIComponent(`/movies/${movieId}/`)}`}>Sign in to add or report notes</a>}
+  {!readOnly && signedIn && watched?<details onToggle={e=>setOwnOpen(e.currentTarget.open)}><summary>Add or manage your notes</summary>{ownOpen&&<OwnNotes path={path} mutate={mutate} onSaved={refreshed} watched={watched}/>}</details>:!readOnly && !signedIn?<a href={`/login/?next=${encodeURIComponent(`/movies/${movieId}/`)}`}>Sign in to add or report notes</a>:null}
  </div>;
 }
 type Mutate=<T>(url:string,method:string,body:Record<string,unknown>)=>Promise<T>;
-function OwnNotes({path,mutate,onSaved}:{path:string;mutate:Mutate;onSaved:()=>void}){
+function OwnNotes({path,mutate,onSaved,watched}:{path:string;mutate:Mutate;onSaved:()=>void;watched:boolean}){
  const [notes,setNotes]=useState<MovieNote[]>([]);const [editing,setEditing]=useState<MovieNote|null>(null);const [message,setMessage]=useState('');const [revision,setRevision]=useState(0);
  useEffect(()=>{const controller=new AbortController();void fetch(path+'own/',{cache:'no-store',signal:controller.signal}).then(read<{notes:MovieNote[]}>).then(d=>setNotes(d.notes)).catch(e=>{if(!controller.signal.aborted)setMessage(e.message);});return ()=>controller.abort();},[path,revision]);
  const [deleting,setDeleting]=useState<MovieNote|null>(null);const [busy,setBusy]=useState(false);
- async function remove(){if(!deleting)return;setBusy(true);try{await mutate(path,'DELETE',{noteId:deleting.id,expectedRevision:deleting.revision});setDeleting(null);setEditing(null);setRevision(n=>n+1);onSaved();}catch(e){setMessage(e instanceof Error?e.message:'Unable to delete.');}finally{setBusy(false);}}
- return <div className="mvp-own-notes"><p>Your own entries below may contain spoilers.</p><p role="status">{message}</p><button type="button" disabled={busy} onClick={()=>{setEditing(null);setDeleting(null);setRevision(n=>n+1);setMessage('');}}>Reload my notes</button>
+ async function remove(){if(!deleting||!watched)return;setBusy(true);try{await mutate(path,'DELETE',{noteId:deleting.id,expectedRevision:deleting.revision});setDeleting(null);setEditing(null);setRevision(n=>n+1);onSaved();}catch(e){setMessage(e instanceof Error?e.message:'Unable to delete.');}finally{setBusy(false);}}
+ return <div className="mvp-own-notes"><p>Your own entries below may contain spoilers.</p><p role="status">{message}</p><button type="button" hidden={!message} disabled={busy} onClick={()=>{setEditing(null);setDeleting(null);setRevision(n=>n+1);setMessage('');}}>Retry loading notes</button>
   {notes.map(n=><div key={n.id}><span>{label(n.category)} · {formatTimestamp(n.startSeconds)||'No timestamp'}</span><p className="mvp-scene-comment">{n.comment}</p><button type="button" onClick={()=>setEditing(n)}>Edit note</button><button type="button" onClick={()=>setDeleting(n)}>Delete note</button></div>)}
   {deleting&&<div role="group" aria-label="Confirm deleting note"><p>Delete this note? This cannot be undone.</p><button type="button" disabled={busy} onClick={()=>void remove()}>Confirm delete</button><button type="button" disabled={busy} onClick={()=>setDeleting(null)}>Cancel</button></div>}
-  <NoteForm key={editing?.id??`new:${revision}`} note={editing} save={async body=>{await mutate(path,'PUT',body);setEditing(null);setRevision(n=>n+1);onSaved();}} cancel={()=>setEditing(null)}/>
+  <NoteForm watched={watched} key={editing?.id??`new:${revision}`} note={editing} save={async body=>{await mutate(path,'PUT',body);setEditing(null);setRevision(n=>n+1);onSaved();}} cancel={()=>setEditing(null)}/>
  </div>;
 }
-function NoteForm({note,save,cancel}:{note:MovieNote|null;save:(body:Record<string,unknown>)=>Promise<void>;cancel:()=>void}){
+function NoteForm({note,save,cancel,watched}:{note:MovieNote|null;save:(body:Record<string,unknown>)=>Promise<void>;cancel:()=>void;watched:boolean}){
  const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const id=useRef(note?.id??'');
- async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=e.currentTarget;const f=new FormData(form);setBusy(true);setMessage('');try{
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!watched)return;const form=e.currentTarget;const f=new FormData(form);setBusy(true);setMessage('');try{
   if(!id.current)id.current=crypto.randomUUID();
-  await save({noteId:id.current,expectedRevision:note?.revision??0,watched:f.get('watched')==='on',category:f.get('category'),severity:f.get('severity')===''?null:Number(f.get('severity')),comment:String(f.get('comment')??'').trim()||null,startSeconds:parseTimestamp(String(f.get('start')??'')),endSeconds:parseTimestamp(String(f.get('end')??'')),version:String(f.get('version')??'').trim()||null,spoilerLevel:Number(f.get('spoiler'))});
+  await save({noteId:id.current,expectedRevision:note?.revision??0,watched:true,category:f.get('category'),severity:f.get('severity')===''?null:Number(f.get('severity')),comment:String(f.get('comment')??'').trim()||null,startSeconds:parseTimestamp(String(f.get('start')??'')),endSeconds:parseTimestamp(String(f.get('end')??'')),version:String(f.get('version')??'').trim()||null,spoilerLevel:Number(f.get('spoiler'))});
   setMessage('Note saved.');
  }catch(e){setMessage(e instanceof Error?e.message:'Unable to save.');}finally{setBusy(false);}}
  return <form onSubmit={submit} className="mvp-scene-form"><h3>{note?'Edit note':'Add optional note or scene'}</h3>
@@ -92,8 +92,8 @@ function NoteForm({note,save,cancel}:{note:MovieNote|null;save:(body:Record<stri
   <label>End (optional, HH:MM:SS)<input name="end" placeholder="00:13:00" defaultValue={formatTimestamp(note?.endSeconds??null)}/></label>
   <label>Movie version (optional)<input name="version" maxLength={80} defaultValue={note?.version??''}/></label>
   <label>Spoiler protection <select name="spoiler" defaultValue={note?.spoilerLevel??0}><option value="0">No spoiler</option><option value="1">Description is a spoiler</option><option value="2">Even the category is a spoiler</option></select></label>
-  <label><input type="checkbox" name="watched" required/> I watched this film</label><p>Provide a comment or a start timestamp. Avoid personal information.</p>
-  <button disabled={busy} type="submit">{busy?'Saving…':'Save note'}</button>{note&&<button type="button" disabled={busy} onClick={cancel}>Cancel edit</button>}<p role="status" aria-live="polite">{message}</p>
+  <p>Provide a comment or a start timestamp. Avoid personal information.</p>
+  <button disabled={busy||!watched} type="submit">{busy?'Saving…':'Save note'}</button>{note&&<button type="button" disabled={busy} onClick={cancel}>Cancel edit</button>}<p role="status" aria-live="polite">{message}</p>
  </form>;
 }
 function ReportForm({note,mutate,movieId,close}:{note:MovieNote;mutate:Mutate;movieId:string;close:()=>void}){

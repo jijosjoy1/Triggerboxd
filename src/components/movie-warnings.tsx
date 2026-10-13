@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { MovieShare } from './movie-share';
 import { QuestionHelp } from './question-help';
-import { WatchedButton } from './film-list';
+import { useFilmList } from './film-list';
 import { MovieScenes } from './movie-scenes';
 import { MovieRepresentation, FamilySummaryCheck } from './movie-representation';
 import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
 import { signatureQuestions, getSignatureVerdict } from '../lib/signature-questions';
-import { QuickContribution, SelectiveReveal, SynopsisReveal } from './movie-product-controls';
+import { QuickContribution, SelectiveReveal, SynopsisReveal, TopicReveal } from './movie-product-controls';
 import type { CategorySlug as AllCategorySlug } from '../lib/contracts';
 
 export type MovieWarning = { category: AllCategorySlug; severity: Severity | null; count: number; distribution: [number, number, number, number]; provisional: boolean; disputed: boolean; descriptors?: string[] };
@@ -36,14 +36,15 @@ function FactualWarnings({ warnings, contributorCount }: { warnings: MovieWarnin
 const questionCategories: Record<string, AllCategorySlug> = { biryani: 'gore_graphic_violence', 'animal-harm': 'animal_harm', drugs: 'drugs', 'sexual-violence': 'sexual_violence', alcohol: 'alcohol', language: 'language', 'physical-violence': 'physical_violence' };
 export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey = 0 }: { warnings: MovieWarning[]; contributorCount: number; movieId?: string; refreshKey?: number }) {
   const [revealed, setRevealed] = useState<MovieWarning[]>([]);
-  useEffect(() => setRevealed([]), [warnings, movieId]);
+  const [revealEpoch,setRevealEpoch]=useState(0);
+  useEffect(() => {setRevealed([]);setRevealEpoch(value=>value+1);}, [warnings, movieId]);
   const effective = warnings.map(warning => revealed.find(item => item.category === warning.category) ?? warning);
-  function rows(visible: boolean) { return signatureQuestions.filter(question => question.initiallyVisible === visible).map(question => {
+  function rows() { return signatureQuestions.map(question => {
     const warning = effective.find(item => item.category === questionCategories[question.id]);
     const severity = warning?.severity ?? null;
-    return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>{question.id === 'parents' && movieId ? <FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /> : <p className="fine">{severity === null ? 'Not shown · Check' : getSignatureVerdict(question.id, severity, 0, true)}</p>}</div>{severity !== null ? <span className={`severity severity-${SEVERITY_LABELS[severity].toLowerCase()}`}>{SEVERITY_LABELS[severity]}</span> : null}</li>;
+    return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>{question.id === 'parents' && movieId ? <FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /> : <p className="fine">{severity === null ? (revealed.some(item=>item.category===questionCategories[question.id]) ? 'Unknown · No reports at this level' : 'Not shown') : getSignatureVerdict(question.id, severity, 0, ['sexual-violence','animal-harm','physical-violence','biryani'].includes(question.id))}</p>}{movieId && question.id !== 'parents' ? <TopicReveal key={`${question.id}-${revealEpoch}`} movieId={movieId} category={questionCategories[question.id]} onReveal={item=>setRevealed(current=>[...current.filter(w=>w.category!==item.category),item])} onHide={()=>setRevealed(current=>current.filter(w=>w.category!==questionCategories[question.id]))}/> : null}</div></li>;
   }); }
-  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2><a className="text-link" href="#contribute">Contribute</a></div><ul className="mvp-question-list">{rows(true)}</ul><details className="mvp-product-details"><summary>Show 3 more questions</summary><ul className="mvp-question-list">{rows(false)}</ul></details><p className="fine guide-caveat">Community reports, not suitability guarantees. Not shown can mean unassessed or protected information. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
+  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2></div><ul className="mvp-question-list">{rows()}</ul><p className="fine guide-caveat">Community reports, not suitability guarantees. Not shown can mean unassessed or protected information. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal onHide={()=>{setRevealed([]);setRevealEpoch(n=>n+1);}} key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
 }
 
 function posterUrl(path: string | null) {
@@ -57,19 +58,24 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   const [retry, setRetry] = useState(0);
   const [activePanel, setActivePanel] = useState<'guide' | 'contribute'>('guide');
   const [contributionOpened, setContributionOpened] = useState(false);
+  const [fullEditor, setFullEditor] = useState(false);
+  const filmList = useFilmList();
+  const watched = !!movie && filmList.films.some(item => item.tmdbId === movie.tmdbId);
+  useEffect(() => { if (filmList.ready && !watched) { setActivePanel('guide'); setFullEditor(false); } }, [filmList.ready, watched]);
   const refresh = useCallback(() => setRetry(value => value + 1), []);
 
   useEffect(() => {
     function followHash() {
-      const contribute = window.location.hash === '#contribute';
+      const contribute = watched && window.location.hash === '#contribute';
       setActivePanel(contribute ? 'contribute' : 'guide');
       if (contribute) setContributionOpened(true);
     }
     followHash(); window.addEventListener('hashchange', followHash);
     return () => window.removeEventListener('hashchange', followHash);
-  }, [movieId]);
+  }, [movieId, watched]);
 
   function selectPanel(panel:'guide'|'contribute') {
+    if (panel==='contribute'&&!watched) return;
     setActivePanel(panel);
     if (panel==='contribute') setContributionOpened(true);
     window.history.replaceState(window.history.state,'',`${window.location.pathname}${window.location.search}${panel==='contribute'?'#contribute':'#guide'}`);
@@ -104,17 +110,20 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   return <><Link href="/search/" className="text-link">← Find another film</Link>
     {loading ? <p role="status" className="mvp-loading">{movie ? 'Refreshing viewer reports…' : 'Loading film guide…'}</p> : null}
     {error ? <div className="mvp-notice mvp-error" role="alert"><h1>{movie ? 'Reports could not refresh.' : 'Film guide unavailable.'}</h1><p>{error}</p>{movie ? <p className="fine">The guide below is the last loaded result and may be out of date.</p> : null}<button className="mvp-secondary" type="button" onClick={refresh} disabled={loading}>Retry film guide</button></div> : null}
-    {movie ? <><header className="mvp-movie-header film-detail-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span>No poster available</span></div>}</div><div><h1>{movie.title}</h1>{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} · {movie.language?.toUpperCase() ?? 'Language unknown'}{runtime ? ` · ${runtime} min` : ''}</p>{genres.length?<p className="film-genres">{genres.join(' / ')}</p>:null}<div className="film-header-actions"><WatchedButton film={{...movie,movieId:movie.id}}/><MovieShare key={`share-${movie.id}`} movieId={movie.id} title={movie.title} /></div><details className="film-certification"><summary>India certification · {certifications.length ? certifications.join(' / ') : 'Unavailable'}</summary><p className="fine">Source: TMDb release records. Labels may differ by release or cut. Separate from viewer warnings; not verified against a CBFC certificate.</p></details></div></header>
-      <div className="film-tabs" role="tablist" aria-label="Movie sections">{(['guide','contribute'] as const).map(panel=><button key={panel} type="button" id={`tab-${panel}`} role="tab" aria-selected={activePanel===panel} aria-controls={`panel-${panel}`} tabIndex={activePanel===panel?0:-1} onClick={()=>selectPanel(panel)} onKeyDown={event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?'guide':event.key==='End'?'contribute':panel==='guide'?'contribute':'guide';selectPanel(next);document.getElementById(`tab-${next}`)?.focus();}}}>{panel==='guide'?'Guide':'Contribute'}</button>)}</div>
+    {movie ? <><header className="mvp-movie-header film-detail-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span>No poster available</span></div>}</div><div><h1>{movie.title}</h1>{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} · {movie.language?.toUpperCase() ?? 'Language unknown'}{runtime ? ` · ${runtime} min` : ''}</p>{genres.length?<p className="film-genres">{genres.join(' / ')}</p>:null}<div className="film-header-actions"><label className="film-watched-toggle"><input type="checkbox" checked={watched} disabled={!filmList.ready} onChange={()=>filmList.toggle({...movie,movieId:movie.id})}/> Watched</label><MovieShare key={`share-${movie.id}`} movieId={movie.id} title={movie.title} /></div>{filmList.error ? <p role="alert">{filmList.error}</p> : null}<details className="film-certification"><summary>India certification · {certifications.length ? certifications.join(' / ') : 'Unavailable'}</summary><p className="fine">Source: TMDb release records. Labels may differ by release or cut. Separate from viewer warnings; not verified against a CBFC certificate.</p></details></div></header>
+      <div className="film-tabs" role="tablist" aria-label="Movie sections">{(['guide','contribute'] as const).map(panel=><button key={panel} type="button" id={`tab-${panel}`} role="tab" aria-selected={activePanel===panel} aria-controls={`panel-${panel}`} aria-disabled={panel==='contribute'&&!watched} tabIndex={activePanel===panel?0:-1} onClick={()=>selectPanel(panel)} onKeyDown={event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?'guide':event.key==='End'?'contribute':panel==='guide'?'contribute':'guide';selectPanel(next);document.getElementById(`tab-${next}`)?.focus();}}}>{panel==='guide'?'Guide':'Contribute'}</button>)}</div>
+      {!watched ? <p className="film-gate-note">Tick Watched above to add your experience. Saved on this browser.</p> : null}
       <div id="panel-guide" role="tabpanel" aria-labelledby="tab-guide" hidden={activePanel!=='guide'}>
       <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} refreshKey={retry} />
       <SynopsisReveal key={`synopsis-${movie.id}`} movieId={movie.id} />
-      <MovieScenes key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
-      <MovieRepresentation movieId={movie.id} refreshKey={retry} onChanged={refresh} />
+      <MovieScenes readOnly key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
+      <MovieRepresentation readOnly movieId={movie.id} refreshKey={retry} onChanged={refresh} />
       </div>
-      <div id="panel-contribute" role="tabpanel" aria-labelledby="tab-contribute" hidden={activePanel!=='contribute'}>{contributionOpened ? <>
-      <QuickContribution key={`quick-${movie.id}`} movieId={movie.id} onChanged={refresh} />
-      <details className="mvp-product-details"><summary>Edit all original assessments / delete contribution</summary><RealContribution movieId={movie.id} onChanged={refresh} /></details>
+      <div id="panel-contribute" role="tabpanel" aria-labelledby="tab-contribute" hidden={activePanel!=='contribute'}>{contributionOpened && watched ? <>
+      {!fullEditor ? <QuickContribution key={`quick-${movie.id}-${fullEditor}`} movieId={movie.id} watched={watched} onChanged={refresh} /> : null}
+      <details className="mvp-product-details" onToggle={event=>setFullEditor(event.currentTarget.open)}><summary>Manage my original ratings</summary>{fullEditor ? <RealContribution movieId={movie.id} watched={watched} onChanged={refresh} /> : null}</details>
+      <MovieScenes movieId={movie.id} watched={watched} onChanged={refresh}/>
+      <MovieRepresentation movieId={movie.id} watched={watched} onChanged={refresh}/>
       </>:null}</div>
     </> : null}
   </>;

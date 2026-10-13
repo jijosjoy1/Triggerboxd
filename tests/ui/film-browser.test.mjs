@@ -48,3 +48,13 @@ test('movie popup offers real separate actions and discloses device-only saving'
   assert.doesNotMatch(html,/synopsis|Severe|verified/i);
 });
 
+
+test('unwatched film blocks popup contributions and deep-link authoring',()=>{
+  const popup=renderToStaticMarkup(React.createElement(FilmDialog,{film,busy:false,error:'',onClose(){},onOpen(){}}));
+  assert.match(popup,/<button[^>]*disabled=""[^>]*>Contribute<\/button>/);
+  const {MovieDetail}=load('../../src/components/movie-warnings.tsx');
+  const html=renderToStaticMarkup(React.createElement(MovieDetail,{movieId:film.movieId,initialMovie:{...film,id:film.movieId,warnings:[],contributorCount:0}}));
+  assert.match(html,/aria-disabled="true"/);
+  assert.equal((html.match(/type="checkbox"/g)??[]).length,1);
+  assert.doesNotMatch(html,/Save warning|Publish assessment|Reload saved data/);
+});

@@ -55,11 +55,10 @@ function selectionsFrom(ratings: Contribution['ratings']): Selections {
   return selections;
 }
 
-export function RealContribution({ movieId, onChanged }: { movieId: string; onChanged: () => void }) {
+export function RealContribution({ movieId, onChanged, watched = false }: { movieId: string; onChanged: () => void; watched?: boolean }) {
   const [session, setSession] = useState<Session | null>(null);
   const [contribution, setContribution] = useState<Contribution | null>(null);
   const [selections, setSelections] = useState<Selections>({});
-  const [watched, setWatched] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -86,7 +85,7 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
       const switched = owner.current !== undefined && owner.current !== nextOwner;
       if (switched) {
         clearDrafts();
-        setSelections({}); setWatched(false); setDirty(false); setMessage(''); setContribution(null);
+        setSelections({}); setDirty(false); setMessage(''); setContribution(null);
         setConflict(false); setConfirmDelete(false); attempt.current = null; loaded.current = false;
       }
       owner.current = nextOwner;
@@ -99,7 +98,7 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
       const saved = data.contribution;
       setContribution(saved);
       setSelections(saved ? selectionsFrom(saved.ratings) : {});
-      setWatched(saved?.watched === true);
+      
       setDirty(false); setConflict(false); setConfirmDelete(false); attempt.current = null;
       try {
         if (replaceDraft) sessionStorage.removeItem(draftKey);
@@ -110,8 +109,8 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
             const valid = draft.version === 1 && draft.movieId === movieId && draft.owner === nextOwner && draft.expiresAt > Date.now() && draft.expiresAt <= Date.now() + 30 * 60_000 && typeof draft.selections === 'object' && draft.selections !== null;
             if (valid && draft.baseRevision === (saved?.revision ?? 0)) {
               const ratings = Object.entries(draft.selections).map(([category, severity]) => ({ category: category as CategorySlug, severity }));
-              setSelections(selectionsFrom(ratings)); setWatched(false); setDirty(true);
-              setMessage('Your temporary draft was restored. Confirm you watched the film before publishing.');
+              setSelections(selectionsFrom(ratings)); setDirty(true);
+              setMessage('Your temporary draft was restored.');
             } else if (valid) {
               setMessage('Your saved contribution changed after this draft was started. The latest saved assessment is loaded; the older draft was discarded.');
               sessionStorage.removeItem(draftKey);
@@ -135,7 +134,7 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
       const detail = (event as CustomEvent<{ previousUserId?: string | null; userId?: string | null }>).detail;
       if (detail?.previousUserId && detail.previousUserId !== detail.userId) {
         clearDrafts(); loaded.current = false; attempt.current = null;
-        setSelections({}); setWatched(false); setDirty(false); setContribution(null); setMessage('');
+        setSelections({}); setDirty(false); setContribution(null); setMessage('');
         owner.current = detail.userId ?? null; setReady(false);
         setSession(current => current && !detail.userId ? { ...current, user: null } : null);
       }
@@ -166,7 +165,7 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
   function discard() {
     try { sessionStorage.removeItem(draftKey); } catch { /* No saved draft. */ }
     setSelections(contribution ? selectionsFrom(contribution.ratings) : {});
-    setWatched(contribution?.watched === true); setDirty(false); setMessage('Draft discarded.'); setError(''); attempt.current = null;
+    setDirty(false); setMessage('Draft discarded.'); setError(''); attempt.current = null;
   }
 
   async function mutate(method: 'PUT' | 'DELETE') {
@@ -181,7 +180,7 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
     try {
       const freshSession = await refreshAuthSession();
       if (!freshSession.user || freshSession.user.id !== owner.current) {
-        clearDrafts(); setSession(freshSession); setSelections({}); setWatched(false); setDirty(false); setContribution(null); setReady(false); loaded.current = false; owner.current = freshSession.user?.id ?? null; attempt.current = null;
+        clearDrafts(); setSession(freshSession); setSelections({}); setDirty(false); setContribution(null); setReady(false); loaded.current = false; owner.current = freshSession.user?.id ?? null; attempt.current = null;
         throw new Error('Your sign-in changed. Please sign in again and reload your contribution.');
       }
       setSession(freshSession);
@@ -195,10 +194,10 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
       setDirty(false); attempt.current = null; setConfirmDelete(false);
       setMessage(method === 'DELETE' ? 'Your contribution was deleted.' : 'Your assessment was published. Unanswered categories remain Unknown.');
       onChanged();
-      if (method === 'DELETE') { setContribution(null); setSelections({}); setWatched(false); }
+      if (method === 'DELETE') { setContribution(null); setSelections({}); }
       else {
         const data = await fetch(`/api/v1/movies/${encodeURIComponent(movieId)}/contribution`, { cache: 'no-store' }).then(readResponse<{ contribution: Contribution | null }>);
-        setContribution(data.contribution); setSelections(data.contribution ? selectionsFrom(data.contribution.ratings) : {}); setWatched(data.contribution?.watched === true);
+        setContribution(data.contribution); setSelections(data.contribution ? selectionsFrom(data.contribution.ratings) : {}); 
       }
     } catch (reason) {
       if (saved) { setReady(false); loaded.current = false; setError('Your change was saved, but we couldn’t reload its latest revision. Reload before editing again.'); }
@@ -212,21 +211,20 @@ export function RealContribution({ movieId, onChanged }: { movieId: string; onCh
   const loginUrl = `/login/?next=${encodeURIComponent(`/movies/${movieId}/#contribute`)}`;
 
   return <section id="full-contribution" className="mvp-contribution" aria-labelledby="contribute-title">
-    <span className="label">A VIEWER’S PERSPECTIVE</span><h2 id="contribute-title">{contribution ? 'Your contribution' : 'Have you watched this film?'}</h2>
+    <span className="label">A VIEWER’S PERSPECTIVE</span><h2 id="contribute-title">{contribution ? 'Your contribution' : 'Your assessment'}</h2>
     <p className="muted">Share content intensity without revealing the story. You can edit or delete your own assessment. Different cuts of a film can differ.</p>
     {message ? <p role="status" className="mvp-notice">{message}</p> : null}
     {error ? <div role="alert" className="mvp-notice mvp-error"><p>{error}</p>{!ready || conflict || !session ? <button className="mvp-secondary" disabled={busy} type="button" onClick={() => void load(conflict)}> {conflict ? 'Load latest saved assessment' : 'Retry loading'}</button> : null}{conflict ? <p className="fine">Loading the latest assessment replaces your current draft.</p> : null}</div> : null}
-    {session && !session.configured ? <p className="mvp-notice">Real contributions are awaiting sign-in and database setup.</p> : ready && session && !session.user ? <div className="mvp-notice"><p>Sign in to publish a watched-film assessment.</p><Link className="button" href={loginUrl}>Sign in to contribute →</Link></div> : !ready ? <p role="status">{error ? 'Your contribution could not be loaded.' : 'Checking your contribution…'}</p> : session?.user ? <form onSubmit={submit}>
-      <fieldset className="mvp-watched" disabled={busy || conflict}><legend>Watched confirmation</legend><label><input type="checkbox" checked={watched} onChange={event => { setWatched(event.target.checked); setDirty(true); setError(''); }} /> <span>I have watched this film.</span></label></fieldset>
+    {session && !session.configured ? <p className="mvp-notice">Real contributions are awaiting sign-in and database setup.</p> : ready && session && !session.user ? <div className="mvp-notice"><p>Sign in to publish a watched-film assessment.</p><Link className="button" href={loginUrl}>Sign in to contribute →</Link></div> : !ready ? <p role="status">{error ? 'Your contribution could not be loaded.' : 'Checking your contribution…'}</p> : session?.user && !watched ? <p className="fine">Mark this film as watched to contribute.</p> : session?.user ? <form onSubmit={submit}>
       <p className="fine">Unknown means you have not assessed a category. None is an explicit report of no content. Labels describe presentation, not the seriousness of real harm or age suitability.</p>
       <details className="mvp-guidance"><summary>What do the intensity labels mean?</summary><dl><div><dt>None</dt><dd>No content in this category.</dd></div><div><dt>Mild</dt><dd>Brief, indirect or non-graphic presence.</dd></div><div><dt>Moderate</dt><dd>Clear, sustained or repeated presence, with limited graphic detail.</dd></div><div><dt>Severe</dt><dd>Explicit, graphic, prolonged or strongly distressing depiction.</dd></div></dl></details>
-      <div className="mvp-category-fields">{CATEGORIES.map(category => <fieldset key={category.slug} disabled={busy || conflict} aria-describedby={`guidance-${category.slug}`}><legend>{category.label}</legend><p className="fine" id={`guidance-${category.slug}`}>{category.guidance}</p><div className="mvp-rating-options">{(['unknown', '0', '1', '2', '3'] as const).map(value => {
+      <div className="mvp-category-fields">{CATEGORIES.map(category => <fieldset key={category.slug} disabled={busy || conflict || !watched} aria-describedby={`guidance-${category.slug}`}><legend>{category.label}</legend><p className="fine" id={`guidance-${category.slug}`}>{category.guidance}</p><div className="mvp-rating-options">{(['unknown', '0', '1', '2', '3'] as const).map(value => {
         const selectedValue = selections[category.slug] === undefined ? 'unknown' : String(selections[category.slug]);
         return <label key={value} className={selectedValue === value ? 'is-selected' : ''}><input type="radio" name={`rating-${category.slug}`} value={value} checked={selectedValue === value} onChange={() => updateSelection(category.slug, value)} /><span>{value === 'unknown' ? 'Unknown' : SEVERITY_LABELS[Number(value)]}</span></label>;
       })}</div></fieldset>)}</div>
       <p className="fine">Draft selections are kept in this tab for up to 30 minutes, linked to your signed-in account. They clear after publishing, discarding or signing out.{storageUnavailable ? ' Temporary storage is unavailable; your draft may be lost if you leave this page.' : ''}</p>
-      <div className="mvp-actions"><button className="button" type="submit" disabled={busy || conflict}>{busy ? 'Saving…' : contribution ? 'Save assessment' : 'Publish assessment'}</button><button className="mvp-secondary" type="button" disabled={busy || !dirty} onClick={discard}>Discard draft</button>{contribution ? <button className="mvp-danger" type="button" disabled={busy || conflict} onClick={() => setConfirmDelete(true)}>Delete my contribution</button> : null}</div>
-      {confirmDelete ? <div className="mvp-notice" role="group" aria-label="Confirm contribution deletion"><p>Delete your full assessment, including its representation details, for this film? The public guide will update after deletion.</p><div className="mvp-actions"><button className="mvp-danger" type="button" disabled={busy || conflict} onClick={() => void mutate('DELETE')}>Confirm deletion</button><button className="mvp-secondary" type="button" disabled={busy} onClick={() => setConfirmDelete(false)}>Keep contribution</button></div></div> : null}
+      <div className="mvp-actions"><button className="button" type="submit" disabled={busy || conflict || !watched}>{busy ? 'Saving…' : contribution ? 'Save changes' : 'Save assessment'}</button><button className="mvp-secondary" type="button" disabled={busy || !dirty} onClick={discard}>Discard draft</button>{contribution ? <button className="mvp-danger" type="button" disabled={busy || conflict || !watched} onClick={() => setConfirmDelete(true)}>Delete my contribution</button> : null}</div>
+      {confirmDelete ? <div className="mvp-notice" role="group" aria-label="Confirm contribution deletion"><p>Delete your full assessment, including its representation details, for this film? The public guide will update after deletion.</p><div className="mvp-actions"><button className="mvp-danger" type="button" disabled={busy || conflict || !watched} onClick={() => void mutate('DELETE')}>Confirm deletion</button><button className="mvp-secondary" type="button" disabled={busy} onClick={() => setConfirmDelete(false)}>Keep contribution</button></div></div> : null}
     </form> : null}
   </section>;
 }

@@ -24,10 +24,14 @@ export function useFilmList() {
       setFilms(next); setError(''); window.dispatchEvent(new Event(FILM_LIST_EVENT));
       return !current.some(item => item.tmdbId === film.tmdbId);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Could not save this film. Browser storage may be full or disabled.');
-      return null;
+      try {
+        const next = toggleFilm(films, film);
+        setFilms(next);
+        setError('Watched status is temporary: browser storage is unavailable. It will reset when you leave this page.');
+        return next.some(item => item.tmdbId === film.tmdbId);
+      } catch { setError(reason instanceof Error ? reason.message : 'Could not update watched status.'); return null; }
     }
-  }, []);
+  }, [films]);
   const clear = useCallback(() => {
     try { localStorage.removeItem(FILM_LIST_KEY); setFilms([]); setError(''); window.dispatchEvent(new Event(FILM_LIST_EVENT)); }
     catch { setError('Browser storage is unavailable.'); }
