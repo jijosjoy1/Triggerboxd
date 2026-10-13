@@ -88,8 +88,6 @@ export function MovieSearch() {
     return () => { clearTimeout(timeout); controller.abort(); };
   }, [normalized, page, retry, validQuery]);
 
-  const returnPath = `/search/?${new URLSearchParams({ q: normalized, page: String(page), ...(selected ? { tmdbId: String(selected.tmdbId) } : {}) })}`;
-
   async function importMovie(movie: SearchMovie | null = selected) {
     if (!movie || opening.current) return;
     opening.current = true;
@@ -103,11 +101,6 @@ export function MovieSearch() {
       }
       const freshSession = await refreshAuthSession();
       setSession(freshSession);
-      if (!freshSession.user) {
-        const next = `/search/?${new URLSearchParams({ q: normalized, page: String(page), tmdbId: String(movie.tmdbId), open: '1' })}`;
-        window.location.assign(`/login/?next=${encodeURIComponent(next)}`);
-        return;
-      }
       if (!importAttempt.current || importAttempt.current.tmdbId !== movie.tmdbId) importAttempt.current = { tmdbId: movie.tmdbId, key: crypto.randomUUID() };
       const response = await fetch('/api/v1/movies/import', {
         method: 'POST',
@@ -123,7 +116,7 @@ export function MovieSearch() {
   }
 
   useEffect(() => {
-    if (resumeOpening.current && selected && session?.user) {
+    if (resumeOpening.current && selected && session?.configured) {
       resumeOpening.current = false;
       void importMovie(selected);
     }
@@ -149,7 +142,7 @@ export function MovieSearch() {
     })}</ul> : null}
     {result && (page > 1 || result.hasMore) ? <nav className="mvp-pagination" aria-label="Search result pages"><button className="mvp-secondary" disabled={page <= 1 || loading} type="button" onClick={() => setPage(value => value - 1)}>Previous page</button><span>Page {page}</span><button className="mvp-secondary" disabled={!result.hasMore || page >= 20 || loading} type="button" onClick={() => setPage(value => value + 1)}>Next page</button></nav> : null}
     {selected ? <section className="mvp-selection" aria-labelledby="selected-title"><span className="label">SELECTED FILM</span><h2 id="selected-title">{selected.title}</h2><p className="muted">{selected.year ?? 'Year unknown'} · {selected.language?.toUpperCase() ?? 'Language unknown'}</p><p>Open its guide to check viewer reports. A film without assessments will show Unknown in every category.</p>
-      {selected.movieId && /^[0-9a-f-]{36}$/i.test(selected.movieId) ? <Link className="button" href={`/movies/${selected.movieId}/`}>Open content guide →</Link> : sessionError ? <p role="alert" className="form-error">{sessionError}</p> : session === null ? <p role="status">Checking sign-in…</p> : !session.configured ? <p className="mvp-notice">Real film guides are awaiting service setup.</p> : session.user ? <button className="button" type="button" onClick={() => void importMovie()} disabled={importing}>{importing ? 'Opening film…' : 'Open content guide →'}</button> : <><p className="fine">Sign in to add this film to Triggerboxd. Reading an existing film guide is public.</p><Link className="button" href={`/login/?next=${encodeURIComponent(returnPath)}`}>Sign in to open this film →</Link></>}
+      {selected.movieId && /^[0-9a-f-]{36}$/i.test(selected.movieId) ? <Link className="button" href={`/movies/${selected.movieId}/`}>Open content guide →</Link> : sessionError ? <p role="alert" className="form-error">{sessionError}</p> : session === null ? <p role="status">Preparing film…</p> : !session.configured ? <p className="mvp-notice">Real film guides are awaiting service setup.</p> : <button className="button" type="button" onClick={() => void importMovie()} disabled={importing}>{importing ? 'Opening film…' : 'Open content guide →'}</button>}
       {importError ? <p className="form-error" role="alert">{importError}</p> : null}
     </section> : null}
   </section>;

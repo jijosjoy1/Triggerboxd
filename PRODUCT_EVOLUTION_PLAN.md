@@ -63,6 +63,8 @@ Acceptance: migration preserves existing assessments; users cannot edit another 
 
 ### 2 — Compact product UI
 
+Public first-open follow-up prepared 2026-10-13: dedicated service-only public import RPC, narrow NOLOGIN importer role with SELECT/INSERT only, visitor/global quotas consumed before TMDb fetch, same-origin CSRF and authoritative metadata. Anonymous retries use unique TMDb ID; authenticated key/body idempotency remains unchanged. Existing/hidden movies are not updated by the anonymous importer. 65 application tests, 164 embedded database assertions, typecheck and production build pass. Hosted migration and anonymous browser verification remain pending; sharing milestone is independently ready.
+
 UI milestone implemented: five visible/three expandable signature questions; selective category reveal; lazy synopsis POST; eleven-category quick partial warnings with descriptors/spoiler levels; own independent family vote; historical full-form edit/delete retained under disclosure. Runtime/genres/certification share one upstream request. 57 application tests, typecheck and production build pass. Browser verified 5/3 disclosure, authenticated controls and lazy synopsis. 390px overflow check passed. Real new quick-warning/family publishing, physical Android/iOS and multi-account browser checks remain unverified. Public first-open importing, representation endpoints, public family consensus, full demographic descriptors and share UI remain pending; this is a UI milestone, not completion of every Phase 2 requirement.
 
 - [ ] Integrate five visible questions and three expanded questions; Unknown defaults for new categories.
