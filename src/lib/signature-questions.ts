@@ -7,6 +7,8 @@ export type SpoilerLevel = 0 | 1 | 2;
 export const CATEGORY_SPOILER_PLACEHOLDER = 'Additional spoiler-sensitive information available.';
 export const DESCRIPTION_SPOILER_PLACEHOLDER = 'Details hidden to avoid spoilers.';
 export const UNRATED_VERDICT = 'Not yet rated';
+export const UNRATED_INDICATOR = '⚪';
+export const MORE_QUESTIONS_LABEL = 'Show 3 more';
 
 export type SignatureQuestionId =
   | 'parents'
@@ -23,6 +25,7 @@ type SeverityCopy = readonly [none: string, mild: string, moderate: string, seve
 export type SignatureQuestion = {
   id: SignatureQuestionId;
   prompt: string;
+  /** Emoji rendered as decorative art; config-owned so copy never lives in a component. */
   icon: string;
   initiallyVisible: boolean;
   scale: 'family-awkwardness' | 'content-severity';
@@ -35,22 +38,22 @@ export type SignatureQuestion = {
 export const signatureQuestions: readonly SignatureQuestion[] = [
   {
     id: 'parents',
-    prompt: 'Family movie night or ceiling inspection?',
-    icon: 'family',
+    prompt: 'Watch with your parents?',
+    icon: '👨‍👩‍👧',
     initiallyVisible: true,
     scale: 'family-awkwardness',
   },
   {
     id: 'biryani',
-    prompt: 'Can you finish your biryani?',
-    icon: 'meal',
+    prompt: 'Can you eat biryani while watching?',
+    icon: '🍛',
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'No graphic imagery reported.',
-      'Limited graphic imagery reported; you can probably keep eating.',
-      'Noticeable graphic imagery reported; you may want a pause.',
-      'Strong or sustained graphic imagery reported; it may affect your appetite.',
+      'Eat peacefully. Nothing to worry about.',
+      "Maybe don't watch while chewing.",
+      'You might want to put that spoon down.',
+      'Even the biryani wants to leave.',
     ],
     factualVerdicts: [
       'No graphic imagery reported.',
@@ -62,14 +65,14 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
   {
     id: 'animal-harm',
     prompt: 'Would John Wick be angry?',
-    icon: 'animal',
+    icon: '🐶',
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'No animal harm reported.',
-      'Limited animal harm reported.',
-      'Noticeable animal harm reported.',
-      'Strong or sustained animal harm reported.',
+      'John can relax.',
+      'John is getting suspicious.',
+      'John is reaching for his suit.',
+      'John Wick is coming.',
     ],
     factualVerdicts: [
       'No animal harm reported.',
@@ -81,65 +84,65 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
   {
     id: 'drugs',
     prompt: 'Is everyone seeing things?',
-    icon: 'medicine',
+    icon: '💊',
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'No drug-related content reported.',
-      'Some drug-related content reported.',
-      'Noticeable drug use or intoxication reported.',
-      'Strong or sustained drug-related content reported.',
+      'No drug use verified.',
+      "Someone's making questionable decisions.",
+      'Reality has left the chat.',
+      'The responsible adult has also joined.',
     ],
     factualVerdicts: [
       'No drug-related content reported.',
       'Limited drug-related content reported.',
       'Noticeable drug-related content reported.',
-      'Strong or sustained drug-related content reported.',
+      'Sustained drug use, addiction or overdose reported.',
     ],
   },
   {
     id: 'sexual-violence',
     prompt: 'Does it contain sexual violence?',
-    icon: 'warning',
+    icon: '⚠️',
     initiallyVisible: true,
     scale: 'content-severity',
     factualVerdicts: [
-      'No sexual violence reported.',
-      'Limited sexual violence content reported.',
-      'Moderate sexual violence content reported.',
-      'Severe sexual violence content reported.',
+      'Verified absence.',
+      'Mentioned or discussed.',
+      'Implied or off-screen.',
+      'Depicted on-screen.',
     ],
   },
   {
     id: 'alcohol',
-    prompt: "Who's the designated driver?",
-    icon: 'glass',
+    prompt: 'How drunk does everyone get?',
+    icon: '🍺',
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      'No alcohol-related content reported.',
-      'Some alcohol use reported.',
-      'Noticeable intoxication or repeated alcohol use reported.',
-      'Strong or sustained alcohol-related content reported.',
+      'Not a drop in sight.',
+      'Just a drink or two.',
+      "Someone's definitely calling a cab.",
+      'Even the bartender needs a drink.',
     ],
     factualVerdicts: [
       'No alcohol-related content reported.',
       'Limited alcohol-related content reported.',
       'Noticeable alcohol-related content reported.',
-      'Strong or sustained alcohol-related content reported.',
+      'Sustained alcohol use or alcohol-related harm reported.',
     ],
   },
   {
     id: 'language',
     prompt: 'Will your vocabulary expand?',
-    icon: 'speech',
+    icon: '🤬',
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      'No profanity reported.',
-      'Occasional profanity reported.',
-      'Frequent profanity reported.',
-      'Strong or persistent profanity reported.',
+      'Sunday school approved.',
+      'A few spicy words.',
+      'The subtitles need censoring.',
+      'Your English teacher would resign.',
     ],
     factualVerdicts: [
       'No profanity reported.',
@@ -151,30 +154,50 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
   {
     id: 'physical-violence',
     prompt: 'Does everyone need health insurance?',
-    icon: 'impact',
+    icon: '🥊',
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      'No physical violence reported.',
-      'Limited physical violence reported.',
-      'Noticeable physical violence reported.',
-      'Strong or graphic physical violence reported.',
+      "Everyone's walking away.",
+      'A few bruises.',
+      'The hospital is getting busy.',
+      'The hospital is the real winner.',
     ],
     factualVerdicts: [
       'No physical violence reported.',
       'Limited physical violence reported.',
       'Noticeable physical violence reported.',
-      'Severe physical violence reported.',
+      'Severe victimisation, torture or domestic violence reported.',
     ],
   },
 ] as const;
 
-const familyAwkwardnessVerdicts: Readonly<Record<FamilyAwkwardnessLevel, string>> = {
-  1: 'An easy family watch.',
-  2: 'A little awkward at times.',
-  3: 'Some awkward silences.',
-  4: 'Suddenly, the ceiling looks interesting.',
-  5: 'Everyone has urgent business in another room.',
+export const familyAwkwardnessVerdicts: Readonly<Record<FamilyAwkwardnessLevel, string>> = {
+  1: 'Even grandma can join.',
+  2: 'A few awkward silences.',
+  3: 'Suddenly, WhatsApp looks interesting.',
+  4: 'The ceiling fan deserves an Oscar.',
+  5: "The remote won't save you.",
+};
+
+/**
+ * Descriptors that make a report serious enough to replace humour with factual
+ * copy. Only descriptors already visible in the public summary are consulted, so
+ * a protected category can never be inferred from the tone switch.
+ */
+export const SERIOUS_HARM_DESCRIPTORS: Readonly<Record<string, readonly string[]>> = {
+  gore_graphic_violence: ['graphic_injury'],
+  animal_harm: ['animal_death', 'animal_cruelty'],
+  drugs: ['drug_addiction', 'overdose'],
+  alcohol: ['alcohol_abuse'],
+  physical_violence: ['torture', 'domestic_violence'],
+  sexual_violence: ['rape', 'attempted_rape', 'sexual_coercion', 'graphic_sexual_violence'],
+};
+
+export const isSeriousHarm = (category: string, descriptors?: readonly string[]): boolean => {
+  if (!descriptors?.length) return false;
+  const serious = SERIOUS_HARM_DESCRIPTORS[category];
+  return !!serious && descriptors.some(descriptor => serious.includes(descriptor));
 };
 
 const byId = new Map(signatureQuestions.map(question => [question.id, question]));

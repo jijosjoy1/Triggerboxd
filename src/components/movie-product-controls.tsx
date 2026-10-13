@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { CATEGORY_SLUGS, WARNING_DESCRIPTOR_IDS, type CategoryRating, type CategorySlug, type OwnContributionResult, type OwnFamilyVoteResult } from '../lib/contracts';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
+import { FAMILY_AWKWARDNESS_LEVELS } from '../lib/signature-questions';
 import type { MovieWarning } from './movie-warnings';
 
 export const categoryName = (slug: string) => slug.replaceAll('_', ' ').replace(/^./, letter => letter.toUpperCase());
@@ -81,6 +82,39 @@ export function SynopsisReveal({ movieId }: { movieId: string }) {
 export function QuickContribution({ movieId, onChanged, watched = false }: { movieId: string; onChanged: () => void; watched?: boolean }) {
   const { session, loading, error } = useAuthSession();
   return <section id="contribute" className="mvp-quick-contribution"><h2>Your experience</h2><p className="fine">Choose a topic, then tell other viewers what to expect.</p>{loading ? <p role="status">Checking sign-in…</p> : error ? <p role="alert">{error}</p> : session?.user && watched ? <QuickForm key={session.user.id + movieId} movieId={movieId} watched={watched} onChanged={onChanged} /> : <Link className="button" href={`/login/?next=${encodeURIComponent(`/movies/${movieId}/#contribute`)}`}>Sign in to contribute</Link>}</section>;
+}
+
+/** One-tap family-awkwardness vote, shown beside the flagship question. */
+export function FamilyVote({ movieId, watched = false, onChanged }: { movieId: string; watched?: boolean; onChanged?: () => void }) {
+  const { session, loading, error } = useAuthSession();
+  const [own, setOwn] = useState<OwnFamilyVoteResult['familyVote']>(null);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    let ignore = false;
+    if (!session?.user || !watched) { setReady(false); return; }
+    request<OwnFamilyVoteResult>(`/api/v1/movies/${movieId}/family-vote`)
+      .then(result => { if (!ignore) { setOwn(result.familyVote); setReady(true); } })
+      .catch((reason: unknown) => { if (!ignore) { setReady(false); setMessage(reason instanceof Error ? reason.message : 'Could not load your vote.'); } });
+    return () => { ignore = true; };
+  }, [movieId, session?.user, watched]);
+  async function vote(value: number) {
+    if (busy || !ready) return;
+    setBusy(true); setMessage('');
+    try {
+      const result = await request<OwnFamilyVoteResult>(`/api/v1/movies/${movieId}/family-vote`, 'PUT', { expectedRevision: own?.revision ?? 0, watched: true, value });
+      setOwn(result.familyVote); setMessage('Your vote is saved. It is your opinion, not community consensus.'); onChanged?.();
+    } catch (reason) {
+      setMessage((reason instanceof Error ? reason.message : 'Could not save your vote.') + ' Reload saved data before voting again if it changed in another tab.');
+    } finally { setBusy(false); }
+  }
+  if (loading || error) return null;
+  if (!session?.user) return <Link className="btn-inline" href={`/login/?next=${encodeURIComponent(`/movies/${movieId}/`)}`}>Sign in to vote</Link>;
+  if (!watched) return null;
+  return <div className="family-vote"><span className="family-vote-label" id={`family-vote-${movieId}`}>Your awkwardness vote</span>
+    <div className="family-vote-buttons" role="group" aria-labelledby={`family-vote-${movieId}`}>{FAMILY_AWKWARDNESS_LEVELS.map(level => <button key={level} type="button" className="family-vote-option" aria-pressed={own?.value === level} disabled={busy || !ready} onClick={() => void vote(level)}>{level}</button>)}</div>
+    {message ? <p role="status" className="fine">{message}</p> : null}</div>;
 }
 
 function QuickForm({ movieId, onChanged, watched }: { movieId: string; onChanged: () => void; watched: boolean }) {

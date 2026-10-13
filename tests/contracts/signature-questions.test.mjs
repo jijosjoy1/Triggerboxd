@@ -55,27 +55,76 @@ test('description spoilers hide the verdict text', () => {
   assert.equal(catalog.getSignatureVerdict('gore', 3, 1, false), 'Details hidden to avoid spoilers.');
 });
 
-test('sexual violence verdicts are factual at every severity', () => {
-  for (const severity of [0, 1, 2, 3]) {
-    const verdict = catalog.getSignatureVerdict('sexual-violence', severity, 0, false);
-    assert.match(verdict, /reported|limited|moderate|high/i);
-    assert.doesNotMatch(verdict, /Oscar|remote|chat|joke|funny/i);
+test('sexual violence verdicts are factual, distinct and humour-free at every severity', () => {
+  const copy = [0, 1, 2, 3].map(severity => catalog.getSignatureVerdict('sexual-violence', severity, 0, false));
+  assert.deepEqual(copy, ['Verified absence.', 'Mentioned or discussed.', 'Implied or off-screen.', 'Depicted on-screen.']);
+  assert.equal(new Set(copy).size, 4);
+  const merged = copy.join(' ');
+  assert.doesNotMatch(merged, /biryani|John Wick|spoon|cab|hospital|grandma|remote|resign|Oscar|chat|joke|funny/i);
+  // A reported absence is not the same message as "not yet rated".
+  assert.notEqual(copy[0], catalog.UNRATED_VERDICT);
+});
+
+test('serious descriptors, not the question id, switch humour to factual copy', () => {
+  const serious = {
+    animal_harm: ['animal_death', 'animal_cruelty'],
+    gore_graphic_violence: ['graphic_injury'],
+    drugs: ['drug_addiction', 'overdose'],
+    alcohol: ['alcohol_abuse'],
+    physical_violence: ['torture', 'domestic_violence'],
+    sexual_violence: ['rape', 'attempted_rape', 'sexual_coercion', 'graphic_sexual_violence'],
+  };
+  for (const [category, descriptors] of Object.entries(serious)) {
+    assert.deepEqual([...(catalog.SERIOUS_HARM_DESCRIPTORS[category] ?? [])].sort(), [...descriptors].sort(), `${category} descriptor set`);
+    for (const descriptor of descriptors) {
+      assert.equal(catalog.isSeriousHarm(category, [descriptor]), true, `${category}/${descriptor} is serious`);
+    }
   }
+  assert.equal(catalog.isSeriousHarm('animal_harm', ['animal_distress', 'animal_injury']), false);
+  assert.equal(catalog.isSeriousHarm('drugs', ['recreational_drug_use']), false);
+  assert.equal(catalog.isSeriousHarm('physical_violence', ['physical_assault']), false);
+  assert.equal(catalog.isSeriousHarm('nudity', ['male_nudity']), false);
+  assert.equal(catalog.isSeriousHarm('animal_harm', []), false);
+  assert.equal(catalog.isSeriousHarm('animal_harm', undefined), false);
 });
 
 test('serious harm switches every humorous verdict to factual intensity language', () => {
+  const humour = /biryani|spoon|John Wick|John can relax|suit|drop in sight|drink or two|calling a cab|bartender|Sunday school|spicy words|subtitles|English teacher|walking away|bruises|hospital|questionable decisions|Reality has left the chat|responsible adult|Oscar|remote|WhatsApp|grandma/i;
   for (const question of catalog.signatureQuestions.slice(1)) {
     for (const severity of [1, 2, 3]) {
       const factual = catalog.getSignatureVerdict(question.id, severity, 0, true);
-      assert.doesNotMatch(factual, /Oscar|biryani|chat|resign|remote|English teacher|dinner/i);
+      assert.doesNotMatch(factual, humour);
+      assert.ok(factual.length > 0);
     }
   }
+});
+
+test('ordinary reports keep the entertaining verdicts', () => {
+  const playful = question => catalog.getSignatureVerdict(question, 0, 0, false);
+  assert.equal(playful('biryani'), 'Eat peacefully. Nothing to worry about.');
+  assert.equal(playful('animal-harm'), 'John can relax.');
+  assert.equal(playful('language'), 'Sunday school approved.');
+  assert.equal(playful('physical-violence'), "Everyone's walking away.");
+  assert.equal(catalog.getFamilyAwkwardnessVerdict(1, 0), 'Even grandma can join.');
+  assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, false), 'Even the biryani wants to leave.');
+  assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, true), 'Strong or sustained graphic imagery reported.');
 });
 
 test('animal severity copy describes intensity without asserting animal-death descriptors', () => {
   for (const severity of [0, 1, 2, 3]) {
     const verdict = catalog.getSignatureVerdict('animal-harm', severity, 0, false);
     assert.doesNotMatch(verdict, /death|dead|killed|fatal/i);
+  }
+});
+
+test('every severity level maps to distinct four-level copy with no invented levels', () => {
+  for (const question of catalog.signatureQuestions.filter(q => q.scale === 'content-severity')) {
+    const playful = question.verdicts ?? question.factualVerdicts;
+    const factual = question.factualVerdicts;
+    assert.equal(playful?.length, 4, `${question.id} humour copy has one entry per severity`);
+    assert.equal(factual?.length, 4, `${question.id} factual copy has one entry per severity`);
+    assert.equal(new Set(playful).size, 4, `${question.id} severity copy is distinct per level`);
+    assert.equal(new Set(factual).size, 4);
   }
 });
 

@@ -8,8 +8,8 @@ import { MovieScenes } from './movie-scenes';
 import { MovieRepresentation, FamilySummaryCheck } from './movie-representation';
 import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
-import { signatureQuestions, getSignatureVerdict } from '../lib/signature-questions';
-import { QuickContribution, SelectiveReveal, SynopsisReveal, TopicReveal } from './movie-product-controls';
+import { signatureQuestions, getSignatureVerdict, isSeriousHarm, UNRATED_INDICATOR, UNRATED_VERDICT } from '../lib/signature-questions';
+import { QuickContribution, FamilyVote, SelectiveReveal, SynopsisReveal, TopicReveal } from './movie-product-controls';
 import type { CategorySlug as AllCategorySlug } from '../lib/contracts';
 
 export type MovieWarning = { category: AllCategorySlug; severity: Severity | null; count: number; distribution: [number, number, number, number]; provisional: boolean; disputed: boolean; descriptors?: string[] };
@@ -34,17 +34,34 @@ function FactualWarnings({ warnings, contributorCount }: { warnings: MovieWarnin
 }
 
 const questionCategories: Record<string, AllCategorySlug> = { biryani: 'gore_graphic_violence', 'animal-harm': 'animal_harm', drugs: 'drugs', 'sexual-violence': 'sexual_violence', alcohol: 'alcohol', language: 'language', 'physical-violence': 'physical_violence' };
-export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey = 0 }: { warnings: MovieWarning[]; contributorCount: number; movieId?: string; refreshKey?: number }) {
+
+/**
+ * A missing rating must never read as a safe verdict. Unknown is neutral grey and
+ * explicitly unrated; a green pill is reserved for a reported absence.
+ */
+function SeverityBadge({ severity }: { severity: Severity | null }) {
+  if (severity === null) return <span className="severity severity-unrated"><span aria-hidden="true">{UNRATED_INDICATOR}</span>{UNRATED_VERDICT}</span>;
+  const label = SEVERITY_LABELS[severity];
+  return <span className={`severity severity-${label.toLowerCase()}`}><span aria-hidden="true">{severity === 0 ? '○' : '●'}</span>{label}</span>;
+}
+
+export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey = 0, watched = false, onGuideChanged }: { warnings: MovieWarning[]; contributorCount: number; movieId?: string; refreshKey?: number; watched?: boolean; onGuideChanged?: () => void }) {
   const [revealed, setRevealed] = useState<MovieWarning[]>([]);
   const [revealEpoch,setRevealEpoch]=useState(0);
   useEffect(() => {setRevealed([]);setRevealEpoch(value=>value+1);}, [warnings, movieId]);
   const effective = warnings.map(warning => revealed.find(item => item.category === warning.category) ?? warning);
   function rows() { return signatureQuestions.map(question => {
-    const warning = effective.find(item => item.category === questionCategories[question.id]);
+    const category = questionCategories[question.id];
+    const warning = category ? effective.find(item => item.category === category) : undefined;
     const severity = warning?.severity ?? null;
-    return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>{question.id === 'parents' && movieId ? <FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /> : <p className="fine">{severity === null ? (revealed.some(item=>item.category===questionCategories[question.id]) ? 'Unknown · No reports at this level' : 'Not shown') : getSignatureVerdict(question.id, severity, 0, ['sexual-violence','animal-harm','physical-violence','biryani'].includes(question.id))}</p>}{movieId && question.id !== 'parents' ? <TopicReveal key={`${question.id}-${revealEpoch}`} movieId={movieId} category={questionCategories[question.id]} onReveal={item=>setRevealed(current=>[...current.filter(w=>w.category!==item.category),item])} onHide={()=>setRevealed(current=>current.filter(w=>w.category!==questionCategories[question.id]))}/> : null}</div></li>;
+    const unratedText = revealed.some(item => item.category === category) ? `${UNRATED_VERDICT} · No reports at this level` : UNRATED_VERDICT;
+    return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>
+      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /></> : <p className="fine">{severity === null ? unratedText : getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors))}</p>}
+      <SeverityBadge severity={severity}/>
+      {movieId && question.id !== 'parents' && category ? <TopicReveal key={`${question.id}-${revealEpoch}`} movieId={movieId} category={category} onReveal={item=>setRevealed(current=>[...current.filter(w=>w.category!==item.category),item])} onHide={()=>setRevealed(current=>current.filter(w=>w.category!==category))}/> : null}
+    </div></li>;
   }); }
-  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2></div><ul className="mvp-question-list">{rows()}</ul><p className="fine guide-caveat">Community reports, not suitability guarantees. Not shown can mean unassessed or protected information. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal onHide={()=>{setRevealed([]);setRevealEpoch(n=>n+1);}} key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
+  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2></div><ul className="mvp-question-list">{rows()}</ul><p className="fine guide-caveat">Community reports, not suitability guarantees. Not yet rated means no viewer has assessed that topic, which is not the same as verified absence. A green rating is only shown when someone has reported the topic as absent. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal onHide={()=>{setRevealed([]);setRevealEpoch(n=>n+1);}} key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
 }
 
 function posterUrl(path: string | null) {
@@ -114,7 +131,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
       <div className="film-tabs" role="tablist" aria-label="Movie sections">{(['guide','contribute'] as const).map(panel=><button key={panel} type="button" id={`tab-${panel}`} role="tab" aria-selected={activePanel===panel} aria-controls={`panel-${panel}`} aria-disabled={panel==='contribute'&&!watched} tabIndex={activePanel===panel?0:-1} onClick={()=>selectPanel(panel)} onKeyDown={event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?'guide':event.key==='End'?'contribute':panel==='guide'?'contribute':'guide';selectPanel(next);document.getElementById(`tab-${next}`)?.focus();}}}>{panel==='guide'?'Guide':'Contribute'}</button>)}</div>
       {!watched ? <p className="film-gate-note">Tick Watched above to add your experience. Saved on this browser.</p> : null}
       <div id="panel-guide" role="tabpanel" aria-labelledby="tab-guide" hidden={activePanel!=='guide'}>
-      <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} refreshKey={retry} />
+      <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} refreshKey={retry} watched={watched} onGuideChanged={refresh} />
       <SynopsisReveal key={`synopsis-${movie.id}`} movieId={movie.id} />
       <MovieScenes readOnly key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
       <MovieRepresentation readOnly movieId={movie.id} refreshKey={retry} onChanged={refresh} />

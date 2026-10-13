@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -20,15 +21,22 @@ test('warning UI keeps severe outliers visible under a None summary',()=>{
   assert.match(html,/severity-none/);
 });
 
-test('all eight emoji questions stay visible without inferring hidden reports',()=>{
+test('all eight reviews show inline with no click-to-reveal, and unrated never reads as safe',()=>{
   const html=renderToStaticMarkup(React.createElement(MovieWarnings,{contributorCount:1,warnings:[{category:'animal_harm',severity:3,count:1,distribution:[0,0,0,1],provisional:true,disputed:false}]}));
-  assert.doesNotMatch(html,/Show 3 more questions/);
   assert.equal((html.match(/class="question-emoji"/g)??[]).length,8);
-  assert.match(html,/ceiling inspection/);
-  assert.match(html,/Strong or sustained animal harm reported/);
-  assert.doesNotMatch(html,/animal death|An easy family watch/);
+  assert.doesNotMatch(html,/Show 3 more|more-questions/);
+  assert.match(html,/How drunk does everyone get\?/);
+  assert.match(html,/Does everyone need health insurance\?/);
+  // Every question row carries a severity pill: one assessed, seven unassessed.
+  assert.equal((html.match(/severity-unrated/g)??[]).length,7);
+  assert.equal((html.match(/severity-severe/g)??[]).length,1);
+  // Missing data must never render as a green absence pill.
+  assert.equal((html.match(/severity-none/g)??[]).length,0);
+  assert.match(html,/Not yet rated/);
+  assert.doesNotMatch(html,/An easy family watch/);
+  // Humour applies for an ordinary report; a green pill never does.
+  assert.match(html,/John Wick is coming\./);
   assert.equal((html.match(/<h3>/g)??[]).length,14);
-  assert.match(html,/Not shown · Check/);
 });
 
 test('protected and unassessed categories have identical default HTML with universal reveal',()=>{
@@ -38,6 +46,29 @@ test('protected and unassessed categories have identical default HTML with unive
   assert.equal(unassessed,protectedHtml);
   assert.match(unassessed,/Reveal selected category/);
   assert.doesNotMatch(unassessed,/additional spoiler-sensitive|hidden categories|No viewer assessments yet/);
+});
+
+test('family vote renders nothing until the session resolves and never server-renders buttons',()=>{
+  const {FamilyVote}=load('../../src/components/movie-product-controls.tsx');
+  const idle=renderToStaticMarkup(React.createElement(FamilyVote,{movieId:'film'}));
+  assert.equal(idle,'');
+  const watchedButUnresolved=renderToStaticMarkup(React.createElement(FamilyVote,{movieId:'film',watched:true}));
+  assert.equal(watchedButUnresolved,'');
+  assert.doesNotMatch(idle,/aria-pressed|family-vote|Save/i);
+});
+
+test('question rows stack on narrow phones and use no fixed width past 320px',()=>{
+  const css=readFileSync(fileURLToPath(new URL('../../src/app/film-ui.css',import.meta.url)),'utf8');
+  for (const rule of css.matchAll(/\.mvp-page \.question-content[^{}]*\{([^}]*)\}/g)) {
+    for (const declaration of rule[1].split(';')) {
+      const width=/(?:^|[\s:])width\s*:\s*(\d+)px/.exec(declaration);
+      if (width) assert.ok(Number(width[1])<=320,`question row declares width:${width[1]}px`);
+    }
+  }
+  assert.match(css,/@media\(max-width:650px\)\{[^@]*\.mvp-page \.question-content\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(css,/\.mvp-page \.severity-unrated/);
+  assert.match(css,/\.family-vote-option\{[^}]*min-height:3\dpx/);
+  assert.match(css,/\.family-vote-option\[aria-pressed=true\]/);
 });
 
 test('quick-form drafts survive category switches and are cleared once saved',()=>{
