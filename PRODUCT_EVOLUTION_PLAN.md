@@ -106,6 +106,8 @@ Representation/family follow-up prepared 2026-10-13: seven informational represe
 
 ## Execution boundaries
 
+Representation/family migration applied 2026-10-13; local filename matches hosted version 20261013011920. Anonymous safe representation and explicit family API reads returned HTTP 200 with honest missing-data states. Raw representation/votes remain denied to browser roles; temporary CREATE revoked. Browser verified explicit family check, informational theme empty state and no overflow at 320px. No representation or family votes were fabricated; real new write/edit/remove flows remain unverified in browser.
+
 Phase 3 hosted migration applied 2026-10-13; local version aligned to 20261013010711. Verified anonymous public scenes API HTTP 200 with an empty list, raw notes/reports inaccessible to browser roles and writer CREATE removed. Browser confirmed lazy timeline loading, honest empty state and no horizontal overflow at 390px. Actual owner note publishing/edit/delete/report and multi-account browser flows remain unverified; no fake notes were created.
 
 Hosted public-import migration applied after explicit approval on 2026-10-13. Local filename matches hosted version 20261013005222. Live HTTP verification used a session with no signed-in user: Kantara (2022), previously absent from Triggerboxd, imported with HTTP 201; public guide returned HTTP 200 with eleven categories. No assessments were fabricated. Verified direct anonymous RPC execution denied, service execution allowed, importer UPDATE and schema CREATE denied. Physical-device and anonymous browser click flow remain distinct unverified checks.
