@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {loadTypeScript} from '../auth/load-typescript.mjs';
+const c=loadTypeScript('src/lib/representation-contracts.ts');
+const ui=loadTypeScript('src/components/movie-representation.tsx');
+test('representation dictionary preserves existing identity slug and separates seven informational tags',()=>{assert.equal(Object.keys(c.REPRESENTATION_LABELS).length,7);assert.equal(c.REPRESENTATION_LABELS.gender_identity,'Gender identity themes');});
+test('representation writes reject severity, descriptors and actor identity injection',()=>{const input={slug:'gender_identity',expectedRevision:0,watched:true,spoilerLevel:2};for(const field of ['severity','descriptors','userId'])assert.throws(()=>c.parseRepresentationWrite({...input,[field]:0}));assert.deepEqual(c.parseRepresentationWrite(input),{...input,remove:false});assert.throws(()=>c.parseRepresentationWrite({...input,watched:false}));});
+test('selected reveal rejects unknown slug, multi-selection and implicit reveal level',()=>{for(const input of [{slug:'unknown',level:2},{slug:['gender_identity'],level:2},{slug:'gender_identity',level:0},{slug:'gender_identity',level:2,slugs:['lgbtq_themes']}])assert.throws(()=>c.parseRepresentationReveal(input));});
+test('family opinion requires explicit check, excludes category-derived inputs',()=>{c.parseFamilyCheck({check:true});assert.throws(()=>c.parseFamilyCheck({check:false}));assert.throws(()=>c.parseFamilyCheck({check:true,severity:3}));});
+test('SSR keeps representation and family information lazy and contains no fetched detail counts',()=>{const props={movieId:'dcd83222-0705-49f8-9b7a-7f9ecc80f120'};const representation=renderToStaticMarkup(React.createElement(ui.MovieRepresentation,props));assert.match(representation,/Representation/);assert.doesNotMatch(representation,/LGBTQ|Transgender|protection|reports|saved details/);const family=renderToStaticMarkup(React.createElement(ui.FamilySummaryCheck,props));assert.match(family,/Check family opinion/);assert.doesNotMatch(family,/Community family opinion:|votes|Unknown/);});

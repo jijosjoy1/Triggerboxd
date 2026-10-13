@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { MovieShare } from './movie-share';
 import { MovieScenes } from './movie-scenes';
+import { MovieRepresentation, FamilySummaryCheck } from './movie-representation';
 import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
 import { signatureQuestions, getSignatureVerdict } from '../lib/signature-questions';
@@ -31,14 +32,14 @@ function FactualWarnings({ warnings, contributorCount }: { warnings: MovieWarnin
 }
 
 const questionCategories: Record<string, AllCategorySlug> = { biryani: 'gore_graphic_violence', 'animal-harm': 'animal_harm', drugs: 'drugs', 'sexual-violence': 'sexual_violence', alcohol: 'alcohol', language: 'language', 'physical-violence': 'physical_violence' };
-export function MovieWarnings({ warnings, contributorCount, movieId }: { warnings: MovieWarning[]; contributorCount: number; movieId?: string }) {
+export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey = 0 }: { warnings: MovieWarning[]; contributorCount: number; movieId?: string; refreshKey?: number }) {
   const [revealed, setRevealed] = useState<MovieWarning[]>([]);
   useEffect(() => setRevealed([]), [warnings, movieId]);
   const effective = warnings.map(warning => revealed.find(item => item.category === warning.category) ?? warning);
   function rows(visible: boolean) { return signatureQuestions.filter(question => question.initiallyVisible === visible).map(question => {
     const warning = effective.find(item => item.category === questionCategories[question.id]);
     const severity = warning?.severity ?? null;
-    return <li key={question.id}><div><h3>{question.prompt}</h3><p className="fine">{severity === null ? 'Not shown · Check' : getSignatureVerdict(question.id, severity, 0, true)}</p></div>{severity !== null ? <span className={`severity severity-${SEVERITY_LABELS[severity].toLowerCase()}`}>{SEVERITY_LABELS[severity]}</span> : null}</li>;
+    return <li key={question.id}><div><h3>{question.prompt}</h3>{question.id === 'parents' && movieId ? <FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /> : <p className="fine">{severity === null ? 'Not shown · Check' : getSignatureVerdict(question.id, severity, 0, true)}</p>}</div>{severity !== null ? <span className={`severity severity-${SEVERITY_LABELS[severity].toLowerCase()}`}>{SEVERITY_LABELS[severity]}</span> : null}</li>;
   }); }
   return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><div><span className="label">BEFORE YOU PRESS PLAY</span><h2>A quick content check</h2></div><a className="text-link" href="#contribute">Add warning →</a></div><ul className="mvp-question-list">{rows(true)}</ul><details className="mvp-product-details"><summary>Show 3 more questions</summary><ul className="mvp-question-list">{rows(false)}</ul></details><p className="fine">Community reports, not suitability guarantees. Not shown can mean unassessed or protected information. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed factual warnings · all original categories</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
 }
@@ -86,9 +87,10 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
     {movie ? <><header className="mvp-movie-header"><div className="mvp-poster">{poster ? <img src={poster} alt={`${movie.title} poster`} width={228} height={342} /> : <div className="mvp-poster-fallback"><span aria-hidden="true">◇</span><span>No poster available</span></div>}</div><div><span className="label">FILM CONTENT GUIDE</span><h1>{movie.title}</h1><MovieShare key={`share-${movie.id}`} movieId={movie.id} title={movie.title} />{movie.originalTitle !== movie.title ? <p className="mvp-original-title">{movie.originalTitle}</p> : null}<p className="movie-meta">{movie.year ?? 'Year unknown'} <span className="divider">/</span> {movie.language?.toUpperCase() ?? 'Language unknown'}</p><a href="#contribute" className="text-link">Add your watched-film assessment →</a></div></header>
       <aside className="mvp-notice" aria-label="Indian film certification"><p><strong>India certification</strong> · {certifications.length ? certifications.join(' / ') : 'Unavailable'}</p><p className="fine">Source: TMDb release records. Labels may differ by release or cut. This is separate from viewer warnings and is not verified against a CBFC certificate.</p></aside>
       <p className="fine">{runtime ? `${runtime} min` : 'Runtime unavailable'}{genres.length ? ` · ${genres.join(' / ')}` : ''}</p>
-      <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} />
+      <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} refreshKey={retry} />
       <SynopsisReveal key={`synopsis-${movie.id}`} movieId={movie.id} />
       <MovieScenes key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
+      <MovieRepresentation movieId={movie.id} refreshKey={retry} onChanged={refresh} />
       <QuickContribution key={`quick-${movie.id}`} movieId={movie.id} onChanged={refresh} />
       <details className="mvp-product-details"><summary>Edit all original assessments / delete contribution</summary><RealContribution movieId={movie.id} onChanged={refresh} /></details>
     </> : null}

@@ -98,6 +98,8 @@ Acceptance: no fabricated verdicts, no hidden category leaks, unsupported APIs u
 
 ### 5 — Community quality and launch
 
+Representation/family follow-up prepared 2026-10-13: seven informational representation tags, owner revision/idempotency-protected add/remove, safe default read and selected reveal. Related tags share conservative spoiler visibility; no severity field exists for representation. Independent family upper-median summary and full distribution load only after explicit check in the Parents row, never from representation or warning values. Account/movie/refresh changes reset revealed payloads. Existing full assessment deletion includes its representation details (confirmation updated); individual representation removal preserves rating rows. 82 application tests, 256 embedded database assertions, typecheck and production build pass. Hosted migration and real mutation/browser verification remain pending.
+
 - [ ] Revision-linked confirm/dispute votes; no self-confirmation; no verification solely by vote count.
 - [ ] Permitted metadata/certification cache, refresh and expiry policy; bounded maintenance only.
 - [ ] Production auth/cookies, simultaneous accounts, deployed Worker CPU, Android/iOS accessibility and moderation checks.

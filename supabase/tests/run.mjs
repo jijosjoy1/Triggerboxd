@@ -54,7 +54,7 @@ try {
   console.log('PASS historical assessment preserved across additive migration');
   await db.exec(`delete from auth.users where id='90000000-0000-4000-8000-000000000001'; delete from public.movies where id='90000000-0000-4000-8000-000000000002';`);
   const results = [];
-  for (const testFile of ['launch.sql','product-foundation.sql','public-import.sql','movie-notes.sql']) {
+  for (const testFile of ['launch.sql','product-foundation.sql','public-import.sql','movie-notes.sql','representation-family.sql']) {
     results.push(...await db.exec(await readFile(path.join(root, 'tests', testFile), 'utf8')));
   }
   const assertions = results.flatMap(result => result.rows ?? []).filter(row => 'passed' in row);
