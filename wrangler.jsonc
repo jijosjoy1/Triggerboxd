@@ -1,10 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "triggerboxd-preview",
+  "name": "lingering-king-c5c0",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-11",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "vars": {"APP_ORIGIN": "https://triggerboxd.com", "ENABLE_PASSWORD_AUTH": "false"},
+  "vars": {"APP_ORIGIN": "https://triggerboxd.com", "ENABLE_GOOGLE_AUTH": "true", "ENABLE_PASSWORD_AUTH": "false"},
   "assets": {"directory": ".open-next/assets", "binding": "ASSETS"},
-  "services": [{"binding": "WORKER_SELF_REFERENCE", "service": "triggerboxd-preview"}]
+  "services": [{"binding": "WORKER_SELF_REFERENCE", "service": "lingering-king-c5c0"}]
 }

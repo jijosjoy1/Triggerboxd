@@ -115,3 +115,13 @@ Hosted public-import migration applied after explicit approval on 2026-10-13. Lo
 Each phase produces tests and a short evidence report. Work on one phase at a time. Do not deploy a partly migrated database/client combination. Licensing confirmation, category-spoiler conflict resolution and verified-absence wording remain explicit product gates. No new infrastructure is required.
 
 Hosted Phase 1 applied 2026-10-12: category count 11; temporary CREATE permissions revoked. Supabase migration version 20261012162814 matches the local filename. Phase 2 UI integration underway.
+
+## Story cards and live MVP release — 2026-10-13
+
+Implemented downloadable 1080x1920 PNG Story cards inside the existing Share dialog. Original canvas artwork avoids poster embedding rights/CORS dependencies. Playful grandma-screening captions use only explicitly checked independent family opinion; unknown/early votes stay honest. No warnings, notes, representation, contributor identities or revealed-category payloads enter the renderer. Native Instagram publishing is not promised.
+
+Verification: 85 application tests, 256 embedded database assertions, typecheck and Next/OpenNext production build passed. Browser verified real family-summary check, downloaded PNG dimensions and 319px no-horizontal-overflow; exported image visually inspected. Physical Android/iOS, multi-user mutation races, Google production login and confirm/dispute voting remain unverified/pending.
+
+User authorized production deployment in this turn. Cloudflare API confirmed both triggerboxd.com and www.triggerboxd.com belong to lingering-king-c5c0; Wrangler identity/self-reference now match that Worker. Runtime configuration loaded via Worker secrets, never committed. Deployed version: 05134e24-eff6-4957-be2d-cb7532fd3022. Live homepage, session, movie search, public movie API and movie guide all returned 200. Session/movie APIs are private/no-store. Live browser verified actual guide rendering.
+
+Remaining: community confirm/dispute workflow, personal preferences, metadata refresh/retention policy and TMDb licensing confirmation, physical-device/authenticated contribution QA, production CPU measurements. Main branch has not been merged; production deployment and Git feature-branch push are separate operations.

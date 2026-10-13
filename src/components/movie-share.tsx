@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { isUuid } from '../lib/validation';
+import { MovieStory } from './movie-story';
 
 export const SHARE_ORIGIN = 'https://triggerboxd.com';
 
@@ -135,6 +136,7 @@ export function MovieShare({ movieId, title }: { movieId: string; title: string 
           <li><a href={redditShareUrl(url, shareTitle)} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span>Share on Reddit</a></li>
         </ul>
         <label className="mvp-share-field">Film link<input className="mvp-share-url" type="text" value={url} readOnly spellCheck={false} aria-label="Canonical film link" onFocus={event => event.currentTarget.select()} /></label>
+        {open ? <MovieStory movieId={movieId} title={shareTitle} /> : null}
         <div className="mvp-share-feedback" role="status" aria-live="polite" data-visible={outcome?.state === 'success' ? 'true' : 'false'}>{outcome?.state === 'success' ? outcome.text : ''}</div>
         <div className="mvp-share-feedback mvp-share-error" role="alert" aria-live="assertive" data-visible={outcome?.state === 'error' ? 'true' : 'false'}>{outcome?.state === 'error' ? outcome.text : ''}</div>
         <button type="button" className="mvp-share-close" onClick={close}>Close</button>
