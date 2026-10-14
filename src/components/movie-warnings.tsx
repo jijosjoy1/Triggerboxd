@@ -7,9 +7,10 @@ import { useFilmList } from './film-list';
 import { MovieScenes } from './movie-scenes';
 import { MovieRepresentation, FamilySummaryCheck } from './movie-representation';
 import { useCallback, useEffect, useState } from 'react';
-import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
+import { CATEGORIES, SEVERITY_LABELS, type Severity } from './real-contribution';
+import { UnifiedContribution } from './unified-contribution';
 import { signatureQuestions, getSignatureVerdict, isSeriousHarm, UNRATED_INDICATOR, UNRATED_VERDICT, MORE_QUESTIONS_LABEL } from '../lib/signature-questions';
-import { QuickContribution, FamilyVote, SelectiveReveal, SynopsisReveal } from './movie-product-controls';
+import { FamilyVote, SelectiveReveal, SynopsisReveal } from './movie-product-controls';
 import type { CategorySlug as AllCategorySlug } from '../lib/contracts';
 
 export type MovieWarning = { category: AllCategorySlug; severity: Severity | null; count: number; distribution: [number, number, number, number]; provisional: boolean; disputed: boolean; descriptors?: string[] };
@@ -72,10 +73,9 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   const [retry, setRetry] = useState(0);
   const [activePanel, setActivePanel] = useState<'guide' | 'contribute'>('guide');
   const [contributionOpened, setContributionOpened] = useState(false);
-  const [fullEditor, setFullEditor] = useState(false);
   const filmList = useFilmList();
   const watched = !!movie && filmList.films.some(item => item.tmdbId === movie.tmdbId);
-  useEffect(() => { if (filmList.ready && !watched) { setActivePanel('guide'); setFullEditor(false); } }, [filmList.ready, watched]);
+  useEffect(() => { if (filmList.ready && !watched) setActivePanel('guide'); }, [filmList.ready, watched]);
   const refresh = useCallback(() => setRetry(value => value + 1), []);
 
   useEffect(() => {
@@ -134,9 +134,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
       <MovieRepresentation readOnly movieId={movie.id} refreshKey={retry} onChanged={refresh} />
       </div>
       <div id="panel-contribute" role="tabpanel" aria-labelledby="tab-contribute" hidden={activePanel!=='contribute'}>{contributionOpened && watched ? <>
-      {!fullEditor ? <QuickContribution year={movie.year} genres={genres} backdropPath={backdropPath} posterPath={movie.posterPath} title={movie.title} key={`quick-${movie.id}-${fullEditor}`} movieId={movie.id} watched={watched} onChanged={refresh} /> : null}
-      <details className="mvp-product-details" onToggle={event=>setFullEditor(event.currentTarget.open)}><summary>Manage my original ratings</summary>{fullEditor ? <RealContribution movieId={movie.id} watched={watched} onChanged={refresh} /> : null}</details>
-      <MovieScenes movieId={movie.id} watched={watched} onChanged={refresh}/>
+      <UnifiedContribution key={movie.id} movieId={movie.id} title={movie.title} year={movie.year} genres={genres} backdropPath={backdropPath} posterPath={movie.posterPath} watched={watched} onChanged={refresh}/>
       <MovieRepresentation movieId={movie.id} watched={watched} onChanged={refresh}/>
       </>:null}</div>
     </> : null}

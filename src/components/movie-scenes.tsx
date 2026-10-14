@@ -66,26 +66,40 @@ function ScenePanel({movieId,signedIn,onChanged,watched,readOnly}:{movieId:strin
  </div>;
 }
 type Mutate=<T>(url:string,method:string,body:Record<string,unknown>)=>Promise<T>;
-function OwnNotes({path,mutate,onSaved,watched}:{path:string;mutate:Mutate;onSaved:()=>void;watched:boolean}){
+/** Owner-only note controls mounted by a single expanded contribution card. */
+export function CategoryOwnNotes({movieId,category,watched,onChanged}:{movieId:string;category:CategorySlug;watched:boolean;onChanged:()=>void}){
+ const [open,setOpen]=useState(false);
+ const retries=useRef(new Map<string,string>());
+ const path=`/api/v1/movies/${encodeURIComponent(movieId)}/scenes/`;
+ const mutate:Mutate=async <T,>(url:string,method:string,body:Record<string,unknown>):Promise<T>=>{
+  const session=await refreshAuthSession();if(!session.user)throw new Error('Sign in again to edit notes.');
+  const encoded=JSON.stringify(body),identity=`${url}:${method}:${encoded}`;
+  let key=retries.current.get(identity);if(!key){key=crypto.randomUUID();retries.current.set(identity,key);}
+  const result=await read<T>(await fetch(url,{method,credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','X-CSRF-Token':session.csrfToken,'Idempotency-Key':key},body:encoded}));
+  retries.current.delete(identity);return result;
+ };
+ return <details className="unified-note-manager" onToggle={event=>setOpen(event.currentTarget.open)}><summary>Notes and scene timestamps</summary>{open?<OwnNotes path={path} mutate={mutate} onSaved={onChanged} watched={watched} category={category}/>:null}</details>;
+}
+function OwnNotes({path,mutate,onSaved,watched,category}:{path:string;mutate:Mutate;onSaved:()=>void;watched:boolean;category?:CategorySlug}){
  const [notes,setNotes]=useState<MovieNote[]>([]);const [editing,setEditing]=useState<MovieNote|null>(null);const [message,setMessage]=useState('');const [revision,setRevision]=useState(0);
  useEffect(()=>{const controller=new AbortController();void fetch(path+'own/',{cache:'no-store',signal:controller.signal}).then(read<{notes:MovieNote[]}>).then(d=>setNotes(d.notes)).catch(e=>{if(!controller.signal.aborted)setMessage(e.message);});return ()=>controller.abort();},[path,revision]);
  const [deleting,setDeleting]=useState<MovieNote|null>(null);const [busy,setBusy]=useState(false);
  async function remove(){if(!deleting||!watched)return;setBusy(true);try{await mutate(path,'DELETE',{noteId:deleting.id,expectedRevision:deleting.revision});setDeleting(null);setEditing(null);setRevision(n=>n+1);onSaved();}catch(e){setMessage(e instanceof Error?e.message:'Unable to delete.');}finally{setBusy(false);}}
  return <div className="mvp-own-notes"><p>Your own entries below may contain spoilers.</p><p role="status">{message}</p><button type="button" hidden={!message} disabled={busy} onClick={()=>{setEditing(null);setDeleting(null);setRevision(n=>n+1);setMessage('');}}>Retry loading notes</button>
-  {notes.map(n=><div key={n.id}><span>{label(n.category)} · {formatTimestamp(n.startSeconds)||'No timestamp'}</span><p className="mvp-scene-comment">{n.comment}</p><button type="button" onClick={()=>setEditing(n)}>Edit note</button><button type="button" onClick={()=>setDeleting(n)}>Delete note</button></div>)}
+  {notes.filter(n=>!category||n.category===category).map(n=><div key={n.id}><span>{label(n.category)} · {formatTimestamp(n.startSeconds)||'No timestamp'}</span><p className="mvp-scene-comment">{n.comment}</p><button type="button" onClick={()=>setEditing(n)}>Edit note</button><button type="button" onClick={()=>setDeleting(n)}>Delete note</button></div>)}
   {deleting&&<div role="group" aria-label="Confirm deleting note"><p>Delete this note? This cannot be undone.</p><button type="button" disabled={busy} onClick={()=>void remove()}>Confirm delete</button><button type="button" disabled={busy} onClick={()=>setDeleting(null)}>Cancel</button></div>}
-  <NoteForm watched={watched} key={editing?.id??`new:${revision}`} note={editing} save={async body=>{await mutate(path,'PUT',body);setEditing(null);setRevision(n=>n+1);onSaved();}} cancel={()=>setEditing(null)}/>
+  <NoteForm watched={watched} category={category} key={editing?.id??`new:${revision}`} note={editing} save={async body=>{await mutate(path,'PUT',body);setEditing(null);setRevision(n=>n+1);onSaved();}} cancel={()=>setEditing(null)}/>
  </div>;
 }
-function NoteForm({note,save,cancel,watched}:{note:MovieNote|null;save:(body:Record<string,unknown>)=>Promise<void>;cancel:()=>void;watched:boolean}){
+function NoteForm({note,save,cancel,watched,category}:{note:MovieNote|null;save:(body:Record<string,unknown>)=>Promise<void>;cancel:()=>void;watched:boolean;category?:CategorySlug}){
  const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const id=useRef(note?.id??'');
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!watched)return;const form=e.currentTarget;const f=new FormData(form);setBusy(true);setMessage('');try{
   if(!id.current)id.current=crypto.randomUUID();
-  await save({noteId:id.current,expectedRevision:note?.revision??0,watched:true,category:f.get('category'),severity:f.get('severity')===''?null:Number(f.get('severity')),comment:String(f.get('comment')??'').trim()||null,startSeconds:parseTimestamp(String(f.get('start')??'')),endSeconds:parseTimestamp(String(f.get('end')??'')),version:String(f.get('version')??'').trim()||null,spoilerLevel:Number(f.get('spoiler'))});
+  await save({noteId:id.current,expectedRevision:note?.revision??0,watched:true,category:category??f.get('category'),severity:f.get('severity')===''?null:Number(f.get('severity')),comment:String(f.get('comment')??'').trim()||null,startSeconds:parseTimestamp(String(f.get('start')??'')),endSeconds:parseTimestamp(String(f.get('end')??'')),version:String(f.get('version')??'').trim()||null,spoilerLevel:Number(f.get('spoiler'))});
   setMessage('Note saved.');
  }catch(e){setMessage(e instanceof Error?e.message:'Unable to save.');}finally{setBusy(false);}}
  return <form onSubmit={submit} className="mvp-scene-form"><h3>{note?'Edit note':'Add optional note or scene'}</h3>
-  <label>Category <select name="category" defaultValue={note?.category??'nudity'}>{CATEGORY_SLUGS.map(c=><option key={c} value={c}>{label(c)}</option>)}</select></label>
+  {category?<p className="fine">Category: {label(category)}</p>:<label>Category <select name="category" defaultValue={note?.category??'nudity'}>{CATEGORY_SLUGS.map(c=><option key={c} value={c}>{label(c)}</option>)}</select></label>}
   <label>Severity (optional)<select name="severity" defaultValue={note?.severity??''}><option value="">Unknown / not assessed</option><option value="0">None</option><option value="1">Mild</option><option value="2">Moderate</option><option value="3">Severe</option></select></label>
   <label>Comment (optional, up to 280 characters)<textarea name="comment" maxLength={280} defaultValue={note?.comment??''}/></label>
   <label>Start (optional, HH:MM:SS)<input name="start" placeholder="00:12:30" defaultValue={formatTimestamp(note?.startSeconds??null)}/></label>
