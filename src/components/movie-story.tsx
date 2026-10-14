@@ -102,7 +102,7 @@ export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,wa
     <button type="button" className="mvp-secondary" onClick={()=>void copy()}>Copy movie link for Story sticker</button>
     <label className="story-link">Movie link<input type="text" readOnly value={link} onFocus={e=>e.currentTarget.select()}/></label>
     <a className="text-link" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Open Instagram ↗</a>
-    <p className="fine">The printed URL is part of the image. Add a Link sticker in Instagram to make it tappable.</p>
+    <p className="fine">The image shows our domain. Add the copied movie link as an Instagram Link sticker to make it tappable.</p>
     {message?<p role="status">{message}</p>:null}
   </div>:null}</section>;
 }
