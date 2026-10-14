@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '../../../lib/auth';
+import { parseNickname } from '../../../lib/nickname';
 import { AuthError, issueCsrf, requestOrigin, safeReturnPath, validateMutation } from '../../../lib/request-security';
 import { authConfiguration, createRequestClient } from '../../../lib/supabase/server';
 
@@ -82,11 +83,11 @@ export function mutationHandler(operation: Operation) {
         providerError = result.error;
         if (!result.error) {
           const user = await requireUser(client);
-          data = { user: { id: user.id, email: user.email }, next };
+          data = { user: { id: user.id }, next };
         }
       } else if (operation === 'signup') {
         if (typeof body.displayName !== 'string' || body.displayName.trim().length < 1 || body.displayName.trim().length > 60) throw new AuthError(400, 'INVALID_REQUEST');
-        const result = await client.auth.signUp({ email: emailValue(body), password: passwordValue(body, true), options: { emailRedirectTo: callback.toString(), data: { display_name: body.displayName.trim() } } });
+        const result = await client.auth.signUp({ email: emailValue(body), password: passwordValue(body, true), options: { emailRedirectTo: callback.toString(), data: { nickname: parseNickname(body.displayName), nickname_chosen: true } } });
         providerError = result.error;
         // Same response for existing and new identities. No manual identity merging.
         data = { confirmationRequired: true, message: 'If signup is available for this email, check your inbox to confirm it.' };

@@ -17,7 +17,7 @@ export type Severity = 0 | 1 | 2 | 3 | 4 | 5;
 export const SEVERITY_LABELS = ['None', 'Mild', 'Moderate', 'Severe', 'Very severe', 'Extreme'] as const;
 type Selections = Partial<Record<CategorySlug, Severity>>;
 type Contribution = { revision: number; ratings: { category: CategorySlug; severity: Severity }[]; watched: true };
-type Session = { user: { id: string; email?: string } | null; csrfToken: string; configured: boolean; passwordEnabled: boolean };
+type Session = { user: { id: string; nickname: string } | null; csrfToken: string; configured: boolean; passwordEnabled: boolean };
 type Draft = { version: 1; movieId: string; owner: string; expiresAt: number; baseRevision: number; selections: Selections };
 const DRAFT_PREFIX = 'triggerboxd:contribution:v1:';
 

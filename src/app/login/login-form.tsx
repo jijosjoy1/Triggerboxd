@@ -56,8 +56,9 @@ export default function LoginForm({ next, linkError }: { next: string; linkError
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
     {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
     {session?.user ? <div>
-      <p>You’re signed in{session.user.email ? ` as ${session.user.email}` : ''}.</p>
+      <p>You’re signed in as {session.user.nickname}.</p>
       <p><Link className="button" href={next}>Continue to your film</Link></p>
+      <p><Link href="/account/">Edit nickname</Link></p>
       <button className={styles.tab} disabled={busy} onClick={logout}>Sign out</button>
     </div> : <>
       <button className={`button ${styles.full}`} disabled={disabled || session?.googleEnabled === false} onClick={google}>{busy ? 'Please wait…' : 'Continue with Google'}</button>
@@ -66,10 +67,10 @@ export default function LoginForm({ next, linkError }: { next: string; linkError
           {(['login', 'signup', 'recovery'] as Mode[]).map(value => <button key={value} type="button" className={styles.tab} disabled={busy} aria-pressed={mode === value} onClick={() => { setMode(value); setError(null); setNotice(null); }}>{value === 'login' ? 'Email sign-in' : value === 'signup' ? 'Create account' : 'Forgot password'}</button>)}
         </div>
         <form className={styles.form} onSubmit={submit}>
-          {mode === 'signup' ? <label>Display name<input name="displayName" autoComplete="nickname" maxLength={60} required disabled={busy} /></label> : null}
+          {mode === 'signup' ? <label>Nickname<input name="displayName" autoComplete="nickname" maxLength={60} required disabled={busy} /></label> : null}
           <label>Email<input name="email" type="email" autoComplete="email" maxLength={254} required disabled={busy} /></label>
           {mode !== 'recovery' ? <label>Password<input name="password" type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={mode === 'signup' ? 12 : 1} maxLength={128} required disabled={busy} /></label> : null}
-          {mode === 'signup' ? <p className={styles.fine}>Use at least 12 characters. You’ll need to confirm your email before contributing. Your display name is separate from your email sign-in.</p> : null}
+          {mode === 'signup' ? <p className={styles.fine}>Use at least 12 characters. You’ll need to confirm your email before contributing. Your nickname is separate from your email sign-in.</p> : null}
           <button className={`button ${styles.full}`} disabled={disabled}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in with email' : mode === 'signup' ? 'Create account' : 'Send reset link'}</button>
         </form>
       </> : <p className={styles.fine}>Email sign-in will be available after email delivery is configured.</p>}

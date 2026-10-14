@@ -9,12 +9,16 @@ export async function GET(request: Request) {
   const config = authConfiguration();
   let scoped: ReturnType<typeof createRequestClient> | undefined;
   try {
-    let user: { id: string; email?: string } | null = null;
+    let user: { id: string; nickname: string } | null = null;
     if (config.configured) {
       scoped = createRequestClient(request);
       const result = await scoped.client.auth.getUser();
       if (result.error && result.error.name !== 'AuthSessionMissingError' && result.error.status && result.error.status >= 500) throw result.error;
-      if (!result.error && result.data.user && !result.data.user.is_anonymous) user = { id: result.data.user.id, email: result.data.user.email };
+      if (!result.error && result.data.user && !result.data.user.is_anonymous) {
+        const status = await scoped.client.rpc('get_my_account_status');
+        if (status.error || !status.data || typeof status.data.displayName !== 'string') throw new Error('Account profile unavailable');
+        user = { id: result.data.user.id, nickname: status.data.displayName };
+      }
     }
     const response = NextResponse.json({ data: { user, csrfToken: '', passwordEnabled: config.passwordEnabled, configured: config.configured, googleEnabled: config.googleEnabled } });
     const csrfToken = issueCsrf(request, response);
