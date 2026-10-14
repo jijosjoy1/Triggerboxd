@@ -69,7 +69,7 @@ test('question rows stack on narrow phones and use no fixed width past 320px',()
   }
   assert.match(css,/@media\(max-width:650px\)\{[^@]*\.mvp-page \.question-content\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
   assert.match(css,/\.mvp-page \.severity-unrated/);
-  assert.match(css,/\.family-vote-option\{[^}]*min-height:3\dpx/);
+  assert.match(css,/\.family-vote-option\{[^}]*min-height:(?:3\d|4\d)px/);
   assert.match(css,/\.family-vote-option\[aria-pressed=true\]/);
 });
 

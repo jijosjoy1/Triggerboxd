@@ -126,7 +126,7 @@ export function MovieShare({ movieId, title }: { movieId: string; title: string 
     <dialog ref={dialog} className="mvp-share" aria-labelledby={titleId} onClick={event => { if (event.target === dialog.current) close(); }} onCancel={close}>
       <div className="mvp-share-panel">
         <h2 id={titleId}>Share this film</h2>
-        <p className="fine">Only the film title and its link are shared. No content warnings, ratings or plot details are included.</p>
+        <p className="fine">The link buttons share only the film title and URL. Story cards below include the report you choose.</p>
         <div className="mvp-share-actions">
           {nativeShare ? <button type="button" className="mvp-secondary" disabled={busy} onClick={() => void share()}>{busy ? 'Sharing…' : 'Share via device'}</button> : null}
           <button type="button" className="button mvp-share-primary" disabled={busy} onClick={() => void copyLink()}>{busy ? 'Copying…' : 'Copy link'}</button>

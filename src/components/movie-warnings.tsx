@@ -134,7 +134,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
       <MovieRepresentation readOnly movieId={movie.id} refreshKey={retry} onChanged={refresh} />
       </div>
       <div id="panel-contribute" role="tabpanel" aria-labelledby="tab-contribute" hidden={activePanel!=='contribute'}>{contributionOpened && watched ? <>
-      {!fullEditor ? <QuickContribution key={`quick-${movie.id}-${fullEditor}`} movieId={movie.id} watched={watched} onChanged={refresh} /> : null}
+      {!fullEditor ? <QuickContribution title={movie.title} key={`quick-${movie.id}-${fullEditor}`} movieId={movie.id} watched={watched} onChanged={refresh} /> : null}
       <details className="mvp-product-details" onToggle={event=>setFullEditor(event.currentTarget.open)}><summary>Manage my original ratings</summary>{fullEditor ? <RealContribution movieId={movie.id} watched={watched} onChanged={refresh} /> : null}</details>
       <MovieScenes movieId={movie.id} watched={watched} onChanged={refresh}/>
       <MovieRepresentation movieId={movie.id} watched={watched} onChanged={refresh}/>
