@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CATEGORY_SLUGS, WARNING_DESCRIPTOR_IDS, type CategoryRating, type CategorySlug, type OwnContributionResult, type OwnFamilyVoteResult } from '../lib/contracts';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
 import { FAMILY_AWKWARDNESS_LEVELS } from '../lib/signature-questions';
+import { getFamilyAwkwardnessVerdict } from '../lib/signature-questions';
 import type { MovieWarning } from './movie-warnings';
 
 export const categoryName = (slug: string) => slug.replaceAll('_', ' ').replace(/^./, letter => letter.toUpperCase());
@@ -55,10 +56,10 @@ export function SelectiveReveal({ movieId, onReveal, onHide }: { movieId: string
     finally{if(current===sequence.current)setBusy(false);}
   }
   return <details className="mvp-product-details" onToggle={event=>{if(!event.currentTarget.open)hide();}}><summary>Other topics &amp; spoiler settings</summary>
-    <p className="fine">Choose a topic to check. Revealing reports may disclose plot details.</p>
+    <p className="fine">Choose a topic to check. </p>
     <form className="mvp-compact-form" onSubmit={reveal}>
       <label>Topic<select disabled={busy} value={category} onChange={e=>{hide();setCategory(e.target.value as CategorySlug);}}>{CATEGORY_SLUGS.map(slug=><option key={slug} value={slug}>{categoryName(slug)}</option>)}</select></label>
-      <label>Include<select disabled={busy} value={level} onChange={e=>{hide();setLevel(Number(e.target.value));}}><option value={1}>Descriptions (keep category spoilers hidden)</option><option value={2}>All reports for this topic (may spoil the story)</option></select></label>
+      <label>Include<select disabled={busy} value={level} onChange={e=>{hide();setLevel(Number(e.target.value));}}><option value={1}>Descriptions (keep category spoilers hidden)</option><option value={2}>All reports for this topic</option></select></label>
       <button className="mvp-secondary" disabled={busy}>{busy?'Checking…':'Reveal selected category'}</button>
     </form>
     {checked?<div className="topic-result"><p>{categoryName(checked.category)} · {checked.severity===null?'Unknown at this reveal level':['None','Mild','Moderate','Severe'][checked.severity]}{checked.descriptors?.length?` · ${checked.descriptors.map(categoryName).join(' · ')}`:''}</p><button className="topic-check" type="button" onClick={hide}>Hide revealed reports</button></div>:null}
@@ -76,7 +77,7 @@ export function SynopsisReveal({ movieId }: { movieId: string }) {
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not load synopsis.'); }
     finally { setBusy(false); }
   }
-  return <section className="mvp-product-details"><button type="button" className="mvp-secondary" disabled={busy} onClick={() => synopsis ? setSynopsis(null) : void reveal()}>{busy ? 'Loading…' : synopsis ? 'Hide synopsis' : 'Show synopsis · may reveal plot'}</button>{synopsis ? <p>{synopsis}</p> : null}{message ? <p role="status">{message}</p> : null}</section>;
+  return <section className="mvp-product-details"><button type="button" className="mvp-secondary" disabled={busy} onClick={() => synopsis ? setSynopsis(null) : void reveal()}>{busy ? 'Loading…' : synopsis ? 'Hide synopsis' : 'Show synopsis'}</button>{synopsis ? <p>{synopsis}</p> : null}{message ? <p role="status">{message}</p> : null}</section>;
 }
 
 export function QuickContribution({ movieId, onChanged, watched = false }: { movieId: string; onChanged: () => void; watched?: boolean }) {
@@ -113,7 +114,7 @@ export function FamilyVote({ movieId, watched = false, onChanged }: { movieId: s
   if (!session?.user) return <Link className="btn-inline" href={`/login/?next=${encodeURIComponent(`/movies/${movieId}/`)}`}>Sign in to vote</Link>;
   if (!watched) return null;
   return <div className="family-vote"><span className="family-vote-label" id={`family-vote-${movieId}`}>Your awkwardness vote</span>
-    <div className="family-vote-buttons" role="group" aria-labelledby={`family-vote-${movieId}`}>{FAMILY_AWKWARDNESS_LEVELS.map(level => <button key={level} type="button" className="family-vote-option" aria-pressed={own?.value === level} disabled={busy || !ready} onClick={() => void vote(level)}>{level}</button>)}</div>
+    <div className="family-vote-buttons" role="group" aria-labelledby={`family-vote-${movieId}`}>{FAMILY_AWKWARDNESS_LEVELS.map(level => <button key={level} type="button" className="family-vote-option" aria-label={`Vote ${level} of 5: ${getFamilyAwkwardnessVerdict(level,0)}`} title={getFamilyAwkwardnessVerdict(level,0)} aria-pressed={own?.value === level} disabled={busy || !ready} onClick={() => void vote(level)}>{level}</button>)}</div>
     {message ? <p role="status" className="fine">{message}</p> : null}</div>;
 }
 
@@ -183,5 +184,5 @@ export function TopicReveal({movieId, category, onReveal, onHide}: {movieId:stri
     }catch(e){if(current===version.current)setError(e instanceof Error?e.message:'Could not check this topic.');}
     finally{if(current===version.current)setBusy(false);}
   }
-  return <><button className="topic-check" type="button" disabled={busy} onClick={()=>void check()}>{busy?'Checking…':shown?'Hide answer':'Check answer · may spoil'}</button>{error?<p role="status">{error}</p>:null}</>;
+  return <><button className="topic-check" type="button" disabled={busy} onClick={()=>void check()}>{busy?'Checking…':shown?'Hide answer':'Check answer'}</button>{error?<p role="status">{error}</p>:null}</>;
 }

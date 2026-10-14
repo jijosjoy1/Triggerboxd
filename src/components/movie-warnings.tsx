@@ -8,7 +8,7 @@ import { MovieScenes } from './movie-scenes';
 import { MovieRepresentation, FamilySummaryCheck } from './movie-representation';
 import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, RealContribution, SEVERITY_LABELS, type Severity } from './real-contribution';
-import { signatureQuestions, getSignatureVerdict, isSeriousHarm, UNRATED_INDICATOR, UNRATED_VERDICT } from '../lib/signature-questions';
+import { signatureQuestions, getSignatureVerdict, isSeriousHarm, UNRATED_INDICATOR, UNRATED_VERDICT, MORE_QUESTIONS_LABEL } from '../lib/signature-questions';
 import { QuickContribution, FamilyVote, SelectiveReveal, SynopsisReveal, TopicReveal } from './movie-product-controls';
 import type { CategorySlug as AllCategorySlug } from '../lib/contracts';
 
@@ -50,18 +50,17 @@ export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey 
   const [revealEpoch,setRevealEpoch]=useState(0);
   useEffect(() => {setRevealed([]);setRevealEpoch(value=>value+1);}, [warnings, movieId]);
   const effective = warnings.map(warning => revealed.find(item => item.category === warning.category) ?? warning);
-  function rows() { return signatureQuestions.map(question => {
+  function rows(visible:boolean) { return signatureQuestions.filter(question=>question.initiallyVisible===visible).map(question => {
     const category = questionCategories[question.id];
     const warning = category ? effective.find(item => item.category === category) : undefined;
     const severity = warning?.severity ?? null;
-    const unratedText = revealed.some(item => item.category === category) ? `${UNRATED_VERDICT} · No reports at this level` : UNRATED_VERDICT;
     return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>
-      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /></> : <p className="fine">{severity === null ? unratedText : getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors))}</p>}
-      <SeverityBadge severity={severity}/>
+      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /></> : severity !== null ? <p className="fine">{getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors, severity))}</p> : null}
+      {question.id!=='parents' ? <SeverityBadge severity={severity}/> : null}
       {movieId && question.id !== 'parents' && category ? <TopicReveal key={`${question.id}-${revealEpoch}`} movieId={movieId} category={category} onReveal={item=>setRevealed(current=>[...current.filter(w=>w.category!==item.category),item])} onHide={()=>setRevealed(current=>current.filter(w=>w.category!==category))}/> : null}
     </div></li>;
   }); }
-  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2></div><ul className="mvp-question-list">{rows()}</ul><p className="fine guide-caveat">Community reports, not suitability guarantees. Not yet rated means no viewer has assessed that topic, which is not the same as verified absence. A green rating is only shown when someone has reported the topic as absent. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal onHide={()=>{setRevealed([]);setRevealEpoch(n=>n+1);}} key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
+  return <section className="mvp-signature" aria-label="Quick content questions"><div className="mvp-signature-heading"><h2>Before you press play</h2></div><ul className="mvp-question-list">{rows(true)}</ul><details className="signature-more"><summary>{MORE_QUESTIONS_LABEL}</summary><ul className="mvp-question-list">{rows(false)}</ul></details><p className="fine guide-caveat">Community reports, not suitability guarantees. Not yet rated can mean unassessed or spoiler-protected information. A green rating is only shown when someone has reported the topic as absent. Family votes are separate opinions.</p>{movieId ? <SelectiveReveal onHide={()=>{setRevealed([]);setRevealEpoch(n=>n+1);}} key={JSON.stringify(warnings)} movieId={movieId} onReveal={warning => setRevealed(current => [...current.filter(item => item.category !== warning.category), warning])} /> : null}<details className="mvp-product-details"><summary>Detailed warnings</summary><FactualWarnings warnings={effective} contributorCount={contributorCount} /></details></section>;
 }
 
 function posterUrl(path: string | null) {

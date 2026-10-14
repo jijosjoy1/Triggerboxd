@@ -57,7 +57,7 @@ test('description spoilers hide the verdict text', () => {
 
 test('sexual violence verdicts are factual, distinct and humour-free at every severity', () => {
   const copy = [0, 1, 2, 3].map(severity => catalog.getSignatureVerdict('sexual-violence', severity, 0, false));
-  assert.deepEqual(copy, ['Verified absence.', 'Mentioned or discussed.', 'Implied or off-screen.', 'Depicted on-screen.']);
+  assert.deepEqual(copy, ['No sexual violence reported.', 'Limited sexual violence content reported.', 'Moderate sexual violence content reported.', 'Severe sexual violence content reported.']);
   assert.equal(new Set(copy).size, 4);
   const merged = copy.join(' ');
   assert.doesNotMatch(merged, /biryani|John Wick|spoon|cab|hospital|grandma|remote|resign|Oscar|chat|joke|funny/i);
@@ -101,10 +101,10 @@ test('serious harm switches every humorous verdict to factual intensity language
 
 test('ordinary reports keep the entertaining verdicts', () => {
   const playful = question => catalog.getSignatureVerdict(question, 0, 0, false);
-  assert.equal(playful('biryani'), 'Eat peacefully. Nothing to worry about.');
-  assert.equal(playful('animal-harm'), 'John can relax.');
-  assert.equal(playful('language'), 'Sunday school approved.');
-  assert.equal(playful('physical-violence'), "Everyone's walking away.");
+  assert.equal(playful('biryani'), 'Eat peacefully — no graphic imagery reported.');
+  assert.equal(playful('animal-harm'), 'John can relax — no animal harm reported.');
+  assert.equal(playful('language'), 'Sunday school vocabulary — no profanity reported.');
+  assert.equal(playful('physical-violence'), 'Everyone’s walking away — no physical violence reported.');
   assert.equal(catalog.getFamilyAwkwardnessVerdict(1, 0), 'Even grandma can join.');
   assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, false), 'Even the biryani wants to leave.');
   assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, true), 'Strong or sustained graphic imagery reported.');
@@ -137,4 +137,11 @@ test('invalid IDs, severity values and spoiler levels fail closed', () => {
     assert.equal(catalog.getSignatureVerdict('gore', 3, level, false), 'Additional spoiler-sensitive information available.');
   }
   assert.equal(catalog.getFamilyAwkwardnessVerdict(6, 0), 'Not yet rated');
+});
+
+test('protected descriptors cannot cause jokes about possible addiction or victimisation',()=>{
+  for(const category of ['drugs','alcohol','physical_violence']) {
+    assert.equal(catalog.isSeriousHarm(category,[],2),true);
+    assert.equal(catalog.isSeriousHarm(category,[],0),false);
+  }
 });

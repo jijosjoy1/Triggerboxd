@@ -47,7 +47,7 @@ function ScenePanel({movieId,signedIn,onChanged,watched,readOnly}:{movieId:strin
  }
  return <div className="mvp-scenes-panel">
   <label>Filter category <select value={filter} onChange={e=>setFilter(e.target.value as CategorySlug|'')}><option value="">All public categories</option>{CATEGORY_SLUGS.map(c=><option key={c} value={c}>{label(c)}</option>)}</select></label>
-  <details className="mvp-scene-reveal"><summary>Reveal selected category information</summary><p>This may reveal plot details. Only your chosen category will be loaded.</p>
+  <details className="mvp-scene-reveal"><summary>Reveal selected category information</summary><p>Only your chosen category will be loaded.</p>
    <label>Category to reveal <select value={revealCategory} onChange={e=>setRevealCategory(e.target.value as CategorySlug)}>{CATEGORY_SLUGS.map(c=><option key={c} value={c}>{label(c)}</option>)}</select></label>
    <button type="button" disabled={loading} onClick={()=>void load(0,2,revealCategory)}>Reveal this category</button>
   </details>

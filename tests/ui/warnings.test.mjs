@@ -21,14 +21,15 @@ test('warning UI keeps severe outliers visible under a None summary',()=>{
   assert.match(html,/severity-none/);
 });
 
-test('all eight reviews show inline with no click-to-reveal, and unrated never reads as safe',()=>{
+test('five signature questions are visible and three are collapsed, with neutral unrated states',()=>{
   const html=renderToStaticMarkup(React.createElement(MovieWarnings,{contributorCount:1,warnings:[{category:'animal_harm',severity:3,count:1,distribution:[0,0,0,1],provisional:true,disputed:false}]}));
   assert.equal((html.match(/class="question-emoji"/g)??[]).length,8);
-  assert.doesNotMatch(html,/Show 3 more|more-questions/);
+  assert.match(html,/<details class="signature-more"><summary>Show 3 more ↓<\/summary>/);
+  assert.equal((html.split('<details class="signature-more">')[0].match(/class="question-emoji"/g)??[]).length,5);
   assert.match(html,/How drunk does everyone get\?/);
   assert.match(html,/Does everyone need health insurance\?/);
   // Every question row carries a severity pill: one assessed, seven unassessed.
-  assert.equal((html.match(/severity-unrated/g)??[]).length,7);
+  assert.equal((html.match(/severity-unrated/g)??[]).length,6);
   assert.equal((html.match(/severity-severe/g)??[]).length,1);
   // Missing data must never render as a green absence pill.
   assert.equal((html.match(/severity-none/g)??[]).length,0);

@@ -8,7 +8,8 @@ export const CATEGORY_SPOILER_PLACEHOLDER = 'Additional spoiler-sensitive inform
 export const DESCRIPTION_SPOILER_PLACEHOLDER = 'Details hidden to avoid spoilers.';
 export const UNRATED_VERDICT = 'Not yet rated';
 export const UNRATED_INDICATOR = '⚪';
-export const MORE_QUESTIONS_LABEL = 'Show 3 more';
+export const MORE_QUESTIONS_LABEL = 'Show 3 more ↓';
+export const FAMILY_INDICATORS = ['🟢','🟡','🟠','🔴','💀'] as const;
 
 export type SignatureQuestionId =
   | 'parents'
@@ -50,10 +51,10 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'Eat peacefully. Nothing to worry about.',
-      "Maybe don't watch while chewing.",
+      'Eat peacefully — no graphic imagery reported.',
+      "Maybe don’t watch while chewing.",
       'You might want to put that spoon down.',
-      'Even the biryani wants to leave.',
+      "Even the biryani wants to leave.",
     ],
     factualVerdicts: [
       'No graphic imagery reported.',
@@ -69,7 +70,7 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'John can relax.',
+      'John can relax — no animal harm reported.',
       'John is getting suspicious.',
       'John is reaching for his suit.',
       'John Wick is coming.',
@@ -88,16 +89,16 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'No drug use verified.',
-      "Someone's making questionable decisions.",
+      'No drug-related content reported.',
+      "Someone’s making questionable decisions.",
       'Reality has left the chat.',
-      'The responsible adult has also joined.',
+      'Strong or sustained drug-related content reported.',
     ],
     factualVerdicts: [
       'No drug-related content reported.',
       'Limited drug-related content reported.',
       'Noticeable drug-related content reported.',
-      'Sustained drug use, addiction or overdose reported.',
+      'Strong or sustained drug-related content reported.',
     ],
   },
   {
@@ -107,10 +108,10 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: true,
     scale: 'content-severity',
     factualVerdicts: [
-      'Verified absence.',
-      'Mentioned or discussed.',
-      'Implied or off-screen.',
-      'Depicted on-screen.',
+      'No sexual violence reported.',
+      'Limited sexual violence content reported.',
+      'Moderate sexual violence content reported.',
+      'Severe sexual violence content reported.',
     ],
   },
   {
@@ -120,16 +121,16 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      'Not a drop in sight.',
+      'Not a drop reported.',
       'Just a drink or two.',
-      "Someone's definitely calling a cab.",
-      'Even the bartender needs a drink.',
+      "Someone’s definitely calling a cab.",
+      'Strong or sustained alcohol-related content reported.',
     ],
     factualVerdicts: [
       'No alcohol-related content reported.',
       'Limited alcohol-related content reported.',
       'Noticeable alcohol-related content reported.',
-      'Sustained alcohol use or alcohol-related harm reported.',
+      'Strong or sustained alcohol-related content reported.',
     ],
   },
   {
@@ -139,7 +140,7 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      'Sunday school approved.',
+      'Sunday school vocabulary — no profanity reported.',
       'A few spicy words.',
       'The subtitles need censoring.',
       'Your English teacher would resign.',
@@ -158,16 +159,16 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      "Everyone's walking away.",
+      'Everyone’s walking away — no physical violence reported.',
       'A few bruises.',
       'The hospital is getting busy.',
-      'The hospital is the real winner.',
+      'Severe physical violence reported.',
     ],
     factualVerdicts: [
       'No physical violence reported.',
       'Limited physical violence reported.',
       'Noticeable physical violence reported.',
-      'Severe victimisation, torture or domestic violence reported.',
+      'Severe physical violence reported.',
     ],
   },
 ] as const;
@@ -194,7 +195,8 @@ export const SERIOUS_HARM_DESCRIPTORS: Readonly<Record<string, readonly string[]
   sexual_violence: ['rape', 'attempted_rape', 'sexual_coercion', 'graphic_sexual_violence'],
 };
 
-export const isSeriousHarm = (category: string, descriptors?: readonly string[]): boolean => {
+export const isSeriousHarm = (category: string, descriptors?: readonly string[], severity?: ContentSeverity | null): boolean => {
+  if (severity !== undefined && ['drugs','alcohol','physical_violence'].includes(category) && (severity === 3 || (severity !== 0 && !descriptors?.length))) return true;
   if (!descriptors?.length) return false;
   const serious = SERIOUS_HARM_DESCRIPTORS[category];
   return !!serious && descriptors.some(descriptor => serious.includes(descriptor));

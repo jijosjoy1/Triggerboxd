@@ -39,3 +39,4 @@
 .mvp-page .question-content{grid-template-columns:minmax(0,1fr);row-gap:8px}
 .mvp-page .question-content>.severity{grid-column:1;grid-row:auto;justify-self:start}
 .family-vote-option{min-width:44px;min-height:40px}}
+.signature-more{margin:8px 0 0;border-bottom:1px solid var(--film-line)}.signature-more>summary{padding:14px 0;color:var(--film-accent);font:500 13px var(--font-ui);cursor:pointer}.signature-more[open]>summary{margin-bottom:8px}
