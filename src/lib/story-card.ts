@@ -113,7 +113,7 @@ export function drawStoryCard(canvas:HTMLCanvasElement,title:string,summary:Fami
 
 /** An explicit own-warning share still respects the report's spoiler protection. */
 export function storyWarningText(warning:CategoryRating):string {
-  if(!CATEGORY_SLUGS.includes(warning.category) || !Number.isInteger(warning.severity) || warning.severity<0 || warning.severity>3)return 'My warning: not assessed';
+  if(!CATEGORY_SLUGS.includes(warning.category) || !Number.isInteger(warning.severity) || warning.severity<0 || warning.severity>5)return 'My warning: not assessed';
   if(warning.spoilerLevel!==undefined && warning.spoilerLevel!==0)return 'I added a spoiler-protected warning.';
-  return `My warning: ${warning.category.replaceAll('_',' ')} · ${['None','Mild','Moderate','Severe'][warning.severity]}`;
+  return `My warning: ${warning.category.replaceAll('_',' ')} · ${['None','Mild','Moderate','Severe','Very severe','Extreme'][warning.severity]}`;
 }

@@ -61,7 +61,7 @@ select notes_test.denied('stale report rejects',$cmd$select public.report_movie_
 select notes_test.denied('invalid reason rejects',$cmd$select public.report_movie_note('70000000-0000-4000-8000-000000000003','70000000-0000-4000-8000-000000000004',1,'other',null,'notes-report-bad')$cmd$,'INVALID_REQUEST');
 select public.patch_warning('70000000-0000-4000-8000-000000000003',0,true,'animal_harm',3::smallint,0::smallint,array['animal_death'],'notes-rating');
 select public.put_movie_note('70000000-0000-4000-8000-000000000003','70000000-0000-4000-8000-000000000005',0,true,'animal_harm',null,0,5,'Theatrical',0::smallint,'notes-time',3::smallint);
-select notes_test.denied('scene severity out of range rejects',$cmd$select public.put_movie_note('70000000-0000-4000-8000-000000000003',gen_random_uuid(),0,true,'animal_harm','Text',null,null,null,0::smallint,'notes-severity',4::smallint)$cmd$,'INVALID_REQUEST');
+select notes_test.denied('scene severity out of range rejects',$cmd$select public.put_movie_note('70000000-0000-4000-8000-000000000003',gen_random_uuid(),0,true,'animal_harm','Text',null,null,null,0::smallint,'notes-severity',6::smallint)$cmd$,'INVALID_REQUEST');
 set local role anon;
 select notes_test.assert('note hides rating aggregates fully',public.get_movie_summary('70000000-0000-4000-8000-000000000003')=(select v from notes_test.state where k='empty-summary'));
 select notes_test.assert('strongest note hides other authors notes',public.get_movie_notes('70000000-0000-4000-8000-000000000003')='{"notes":[],"nextOffset":null}');

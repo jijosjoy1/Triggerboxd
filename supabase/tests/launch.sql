@@ -53,8 +53,8 @@ select test.assert('migration backfills existing profiles without touching auth'
   and exists(select 1 from private.user_access where user_id='00000000-0000-4000-8000-000000000099'));
 
 set local role anon;
-select test.assert('anonymous sees eleven categories', (select count(*)=11 from public.warning_categories));
-select test.assert('new movie has eleven Unknown warnings', (select jsonb_array_length(value->'warnings')=11 and (value->>'contributorCount')::integer=0
+select test.assert('anonymous sees thirteen categories', (select count(*)=13 from public.warning_categories));
+select test.assert('new movie has thirteen Unknown warnings', (select jsonb_array_length(value->'warnings')=13 and (value->>'contributorCount')::integer=0
   and not exists(select 1 from jsonb_array_elements(value->'warnings') w where w->'severity'<>'null'::jsonb or w->>'count'<>'0' or w->>'provisional'<>'false')
   from (select public.get_movie_summary('10000000-0000-4000-8000-000000000001') value) s));
 select test.denied('anon cannot read raw contributions','select * from public.contributions','permission denied');
@@ -85,7 +85,7 @@ select test.denied('watched confirmation is required',$cmd$select public.put_con
 select test.denied('empty rating set cannot create misleading contribution',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[]','empty-bad-1')$cmd$,'INVALID_REQUEST');
 select test.denied('duplicate categories rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":0},{"category":"nudity","severity":1}]','duplicate-1')$cmd$,'INVALID_REQUEST');
 select test.denied('invalid category rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"unknown","severity":0}]','invalid-cat')$cmd$,'INVALID_REQUEST');
-select test.denied('out of range severity rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":4}]','invalid-sev')$cmd$,'INVALID_REQUEST');
+select test.denied('out of range severity rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":6}]','invalid-sev')$cmd$,'INVALID_REQUEST');
 select test.denied('fractional severity rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":1.5}]','decimal-sev')$cmd$,'INVALID_REQUEST');
 select test.denied('string severity rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":"0"}]','string-sev')$cmd$,'INVALID_REQUEST');
 select test.denied('rating identity or note fields rejected',$cmd$select public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":0,"note":"no","user_id":"spoof"}]','extra-field')$cmd$,'INVALID_REQUEST');
@@ -111,7 +111,7 @@ select test.assert('B cannot read A profile',(select count(*)=1 and min(user_id:
 select test.assert('own RPC returns null for B',public.get_my_contribution('10000000-0000-4000-8000-000000000001')='{"contribution":null}'::jsonb);
 select test.denied('B cannot delete A via movie ID',$cmd$select public.delete_contribution('10000000-0000-4000-8000-000000000001',1,'b-delete-a')$cmd$,'NOT_FOUND');
 insert into test.state values('b-put',public.put_contribution('10000000-0000-4000-8000-000000000001',0,true,'[{"category":"nudity","severity":0}]','b-first-put'));
-select test.assert('[0,3] is Severe provisional disputed',(select w->>'severity'='3' and w->>'provisional'='true' and w->>'disputed'='true' and w->'distribution'='[1,0,0,1]'::jsonb
+select test.assert('[0,3] is Severe provisional disputed',(select w->>'severity'='3' and w->>'provisional'='true' and w->>'disputed'='true' and w->'distribution'='[1,0,0,1,0,0]'::jsonb
   from jsonb_array_elements(public.get_movie_summary('10000000-0000-4000-8000-000000000001')->'warnings') w where w->>'category'='nudity'));
 reset role;
 select test.assert('idempotent retry consumes quota only once',(select count=2 from private.request_buckets where action='contribution' and subject_hash='00000000-0000-4000-8000-000000000001' and window_seconds=60));
@@ -195,13 +195,13 @@ begin
   select w - 'category' - 'descriptors' into actual from jsonb_array_elements(public.get_movie_summary('10000000-0000-4000-8000-000000000002')->'warnings') w where w->>'category'='nudity';
   return actual=p_expected;
 end $$;
-select test.assert('[] -> Unknown',test.vector('{}','{"severity":null,"count":0,"distribution":[0,0,0,0],"provisional":false,"disputed":false}'));
-select test.assert('[0] -> None provisional',test.vector('{0}','{"severity":0,"count":1,"distribution":[1,0,0,0],"provisional":true,"disputed":false}'));
-select test.assert('[0,3] -> Severe provisional disputed',test.vector('{0,3}','{"severity":3,"count":2,"distribution":[1,0,0,1],"provisional":true,"disputed":true}'));
-select test.assert('[0,1] -> Mild provisional not disputed',test.vector('{0,1}','{"severity":1,"count":2,"distribution":[1,1,0,0],"provisional":true,"disputed":false}'));
-select test.assert('[0,0,2,2] -> Moderate disputed',test.vector('{0,0,2,2}','{"severity":2,"count":4,"distribution":[2,0,2,0],"provisional":false,"disputed":true}'));
-select test.assert('[0,0,0,0,3] -> None extreme still visible',test.vector('{0,0,0,0,3}','{"severity":0,"count":5,"distribution":[4,0,0,1],"provisional":false,"disputed":false}'));
-select test.assert('[0,0,1,3,3] second cut detects dispute',test.vector('{0,0,1,3,3}','{"severity":1,"count":5,"distribution":[2,1,0,2],"provisional":false,"disputed":true}'));
+select test.assert('[] -> Unknown',test.vector('{}','{"severity":null,"count":0,"distribution":[0,0,0,0,0,0],"provisional":false,"disputed":false}'));
+select test.assert('[0] -> None provisional',test.vector('{0}','{"severity":0,"count":1,"distribution":[1,0,0,0,0,0],"provisional":true,"disputed":false}'));
+select test.assert('[0,3] -> Severe provisional disputed',test.vector('{0,3}','{"severity":3,"count":2,"distribution":[1,0,0,1,0,0],"provisional":true,"disputed":true}'));
+select test.assert('[0,1] -> Mild provisional not disputed',test.vector('{0,1}','{"severity":1,"count":2,"distribution":[1,1,0,0,0,0],"provisional":true,"disputed":false}'));
+select test.assert('[0,0,2,2] -> Moderate disputed',test.vector('{0,0,2,2}','{"severity":2,"count":4,"distribution":[2,0,2,0,0,0],"provisional":false,"disputed":true}'));
+select test.assert('[0,0,0,0,3] -> None extreme still visible',test.vector('{0,0,0,0,3}','{"severity":0,"count":5,"distribution":[4,0,0,1,0,0],"provisional":false,"disputed":false}'));
+select test.assert('[0,0,1,3,3] second cut detects dispute',test.vector('{0,0,1,3,3}','{"severity":1,"count":5,"distribution":[2,1,0,2,0,0],"provisional":false,"disputed":true}'));
 delete from auth.users where id=md5('aggregate-vector-user-1')::uuid;
 select test.assert('account deletion cascades vote exclusion',public.get_movie_summary('10000000-0000-4000-8000-000000000002')->>'contributorCount'='4');
 select test.assert('account deletion cascades profile and access',not exists(select 1 from public.profiles where user_id=md5('aggregate-vector-user-1')::uuid)

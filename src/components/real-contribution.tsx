@@ -8,13 +8,13 @@ export const CATEGORIES = [
   { slug: 'nudity', label: 'Nudity', guidance: 'Exposed bodies. Assess presentation and duration.' },
   { slug: 'sexual_content', label: 'Sexual content', guidance: 'Sexual activity or references. Assess intensity and detail.' },
   { slug: 'sexual_violence', label: 'Sexual violence', guidance: 'Threats, coercion or assault. Mild: references; Moderate: non-graphic depiction; Severe: explicit or prolonged depiction.' },
-  { slug: 'gore_graphic_violence', label: 'Gore / graphic violence', guidance: 'Injuries, blood and graphic violence. Assess visible detail and duration.' },
+  { slug: 'gore_graphic_violence', label: 'Gore / disturbing visuals', guidance: 'Stomach-turning visuals and graphic injuries. Earlier reports also included blood and graphic violence.' },
   { slug: 'disturbing_content', label: 'Disturbing content', guidance: 'Intense distress outside the other categories.' },
   { slug: 'suicide_self_harm', label: 'Suicide / self-harm', guidance: 'Mild: indirect references; Moderate: non-graphic depiction; Severe: explicit or prolonged depiction.' },
 ] as const;
 export type CategorySlug = typeof CATEGORIES[number]['slug'];
-export type Severity = 0 | 1 | 2 | 3;
-export const SEVERITY_LABELS = ['None', 'Mild', 'Moderate', 'Severe'] as const;
+export type Severity = 0 | 1 | 2 | 3 | 4 | 5;
+export const SEVERITY_LABELS = ['None', 'Mild', 'Moderate', 'Severe', 'Very severe', 'Extreme'] as const;
 type Selections = Partial<Record<CategorySlug, Severity>>;
 type Contribution = { revision: number; ratings: { category: CategorySlug; severity: Severity }[]; watched: true };
 type Session = { user: { id: string; email?: string } | null; csrfToken: string; configured: boolean; passwordEnabled: boolean };
@@ -50,7 +50,7 @@ function clearDrafts() {
 function selectionsFrom(ratings: Contribution['ratings']): Selections {
   const selections: Selections = {};
   for (const rating of ratings) {
-    if (CATEGORIES.some(category => category.slug === rating.category) && Number.isInteger(rating.severity) && rating.severity >= 0 && rating.severity <= 3) selections[rating.category] = rating.severity;
+    if (CATEGORIES.some(category => category.slug === rating.category) && Number.isInteger(rating.severity) && rating.severity >= 0 && rating.severity <= 5) selections[rating.category] = rating.severity;
   }
   return selections;
 }

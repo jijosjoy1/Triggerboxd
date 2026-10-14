@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CATEGORY_SLUGS, WARNING_DESCRIPTOR_IDS, type CategorySlug, type OwnContribution, type OwnContributionResult, type OwnFamilyVoteResult, type Severity, type WarningSpoilerLevel } from '../lib/contracts';
+import { CONTENT_SEVERITIES } from '../lib/signature-questions';
 import { draftFrom, editRating, PartialSaveError, RetryKeys, saveChangedCategories, type RatingDraft as Draft, type RatingDrafts as Drafts } from '../lib/unified-contribution-save';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
 import { CategoryOwnNotes } from './movie-scenes';
@@ -14,7 +15,9 @@ const META: Record<CategorySlug, { title: string; description: string }> = {
   nudity: { title: 'Nudity', description: 'Exposed bodies and how prominently they appear.' },
   sexual_content: { title: 'Sexual content', description: 'Sexual activity, intimacy, or references.' },
   sexual_violence: { title: 'Sexual violence', description: 'Threats, coercion, assault, or references to them.' },
-  gore_graphic_violence: { title: 'Gore / graphic violence', description: 'Blood, injuries, and visible graphic detail.' },
+  gore_graphic_violence: { title: '🍛 Gore / disturbing visuals', description: 'Stomach-turning visuals, body horror or graphic injury. Earlier reports also included blood.' },
+  graphic_violence: { title: '🩸 Graphic violence / bloodshed', description: 'Explicit bloody violence, severe injuries, brutal attacks or dismemberment.' },
+  horror: { title: '👻 Horror / frightening content', description: 'Jump scares, unsettling imagery, suspense or psychological fear.' },
   animal_harm: { title: 'Animal harm', description: 'Animal distress, injury, cruelty, or death.' },
   drugs: { title: 'Drugs', description: 'Drug use, addiction, or overdose.' },
   alcohol: { title: 'Alcohol', description: 'Drinking, intoxication, or alcohol abuse.' },
@@ -23,8 +26,8 @@ const META: Record<CategorySlug, { title: string; description: string }> = {
   disturbing_content: { title: 'Disturbing content', description: 'Distressing material outside the other topics.' },
   suicide_self_harm: { title: 'Suicide / self-harm', description: 'References or depictions of suicide and self-harm.' },
 };
-const ORDER: CategorySlug[] = ['nudity', 'sexual_content', 'sexual_violence', 'gore_graphic_violence', 'animal_harm', 'drugs', 'alcohol', 'language', 'physical_violence', 'disturbing_content', 'suicide_self_harm'];
-const LEVELS = ['None', 'Mild', 'Moderate', 'Severe'] as const;
+const ORDER: CategorySlug[] = ['gore_graphic_violence', 'graphic_violence', 'horror', 'nudity', 'sexual_content', 'sexual_violence', 'animal_harm', 'drugs', 'alcohol', 'language', 'physical_violence', 'disturbing_content', 'suicide_self_harm'];
+const LEVELS = CONTENT_SEVERITIES;
 const FAMILY_COPY = ['Even grandma can join.', 'A few awkward silences.', 'Suddenly, WhatsApp looks interesting.', 'The ceiling fan deserves an Oscar.', "The remote won't save you."] as const;
 const draftKey = (movieId: string, owner: string) => `triggerboxd:unified-contribution:v1:${movieId}:${owner}`;
 
@@ -84,7 +87,7 @@ export function UnifiedContribution({ movieId, title, posterPath, backdropPath, 
             if (stored.expiresAt > Date.now() && stored.expiresAt <= Date.now() + 30 * 60_000 && stored.drafts && typeof stored.drafts === 'object') {
               for (const slug of CATEGORY_SLUGS) {
                 const candidate = stored.drafts[slug];
-                if (candidate && Number.isInteger(candidate.severity) && candidate.severity >= 0 && candidate.severity <= 3 && [0, 1, 2].includes(candidate.spoilerLevel) && Array.isArray(candidate.descriptors) && candidate.descriptors.length <= 8 && new Set(candidate.descriptors).size === candidate.descriptors.length && candidate.descriptors.every(id => WARNING_DESCRIPTOR_IDS[slug].includes(id))) restored[slug] = candidate.severity === 0 ? { severity: 0, spoilerLevel: 0, descriptors: [] } : candidate;
+                if (candidate && Number.isInteger(candidate.severity) && candidate.severity >= 0 && candidate.severity <= 5 && [0, 1, 2].includes(candidate.spoilerLevel) && Array.isArray(candidate.descriptors) && candidate.descriptors.length <= 8 && new Set(candidate.descriptors).size === candidate.descriptors.length && candidate.descriptors.every(id => WARNING_DESCRIPTOR_IDS[slug].includes(id))) restored[slug] = candidate.severity === 0 ? { severity: 0, spoilerLevel: 0, descriptors: [] } : candidate;
               }
               restoredFamily = Number.isInteger(stored.familyDraft) && stored.familyDraft! >= 1 && stored.familyDraft! <= 5 ? stored.familyDraft : null;
               if (stored.revision !== (own.contribution?.revision ?? 0) || stored.familyRevision !== (vote.familyVote?.revision ?? 0)) {

@@ -33,8 +33,10 @@ test('replacement requires a nonempty bounded unique category set', () => {
     assert.throws(() => v.parseContributionInput({ ...valid, ratings }), v.ValidationError);
   }
 });
-test('severity is an integer, never a coerced string, boolean, null or fraction', () => {
-  for (const severity of ['0', false, null, 1.5, -1, 4, NaN, Infinity]) {
+test('severity accepts the extended scale and rejects values outside it', () => {
+  assert.equal(v.parseContributionInput({ ...valid, ratings: [{ category: 'horror', severity: 5 }] }).ratings[0].severity, 5);
+  assert.equal(v.parsePatchWarningInput({ expectedRevision: 0, watched: true, category: 'graphic_violence', severity: 4, spoilerLevel: 0, descriptors: [] }).severity, 4);
+  for (const severity of ['0', false, null, 1.5, -1, 6, NaN, Infinity]) {
     assert.throws(() => v.parseContributionInput({ ...valid, ratings: [{ category: 'nudity', severity }] }), v.ValidationError);
   }
 });

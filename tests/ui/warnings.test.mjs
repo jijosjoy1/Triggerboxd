@@ -11,7 +11,7 @@ const load = name => loadTypeScript(fileURLToPath(new URL(`../../src/components/
 test('warning UI distinguishes an explicit None from unanswered categories',()=>{
   const html=renderToStaticMarkup(React.createElement(MovieWarnings,{contributorCount:1,warnings:[{category:'nudity',severity:0,count:1,distribution:[1,0,0,0],provisional:true,disputed:false}]}));
   assert.equal((html.match(/severity-none/g)??[]).length,1);
-  assert.equal((html.match(/severity-unknown/g)??[]).length,5);
+  assert.equal((html.match(/severity-unknown/g)??[]).length,12);
   assert.match(html,/Provisional/);
 });
 test('warning UI keeps severe outliers visible under a None summary',()=>{
@@ -21,23 +21,40 @@ test('warning UI keeps severe outliers visible under a None summary',()=>{
   assert.match(html,/severity-none/);
 });
 
-test('five signature questions are visible and three are collapsed, with neutral unrated states',()=>{
+test('horror and graphic violence show independent six-level warning summaries',()=>{
+  const html=renderToStaticMarkup(React.createElement(MovieWarnings,{contributorCount:2,warnings:[
+    {category:'horror',severity:5,count:2,distribution:[1,0,0,0,0,1],provisional:true,disputed:true},
+    {category:'graphic_violence',severity:0,count:1,distribution:[1,0,0,0,0,0],provisional:true,disputed:false},
+  ]}));
+  assert.match(html,/Even the ghosts are scared\./);
+  assert.match(html,/No graphic violence reported\./);
+  assert.match(html,/severity-extreme/);
+  assert.match(html,/Graphic violence \/ bloodshed: reported severity counts/);
+  assert.match(html,/<dt>Extreme<\/dt><dd>1<\/dd>/);
+});
+
+test('new warning questions stay together with neutral unrated states',()=>{
   const html=renderToStaticMarkup(React.createElement(MovieWarnings,{contributorCount:1,warnings:[{category:'animal_harm',severity:3,count:1,distribution:[0,0,0,1],provisional:true,disputed:false}]}));
-  assert.equal((html.match(/class="question-emoji"/g)??[]).length,8);
-  assert.match(html,/<details class="signature-more"><summary>Show 3 more ↓<\/summary>/);
-  assert.equal((html.split('<details class="signature-more">')[0].match(/class="question-emoji"/g)??[]).length,5);
+  assert.equal((html.match(/class="question-emoji"/g)??[]).length,9);
+  assert.match(html,/<details class="signature-more"><summary>Show 2 more ↓<\/summary>/);
+  assert.equal((html.split('<details class="signature-more">')[0].match(/class="question-emoji"/g)??[]).length,7);
   assert.match(html,/How drunk does everyone get\?/);
-  assert.match(html,/Does everyone need health insurance\?/);
-  // Every question row carries a severity pill: one assessed, seven unassessed.
-  assert.equal((html.match(/severity-unrated/g)??[]).length,6);
-  assert.equal((html.match(/severity-severe/g)??[]).length,1);
+  assert.match(html,/Heads rolling or blood splattering\?/);
+  assert.match(html,/Will you sleep tonight\?/);
+  assert.match(html,/Gore &amp; disturbing visuals/);
+  assert.match(html,/Graphic violence &amp; bloodshed/);
+  assert.match(html,/Horror &amp; frightening content/);
+  assert.doesNotMatch(html,/Does everyone need health insurance\?/);
+  // Every content question row carries a severity pill: one assessed, seven unassessed.
+  assert.equal((html.match(/severity-unrated/g)??[]).length,7);
+  assert.equal((html.match(/severity-severe/g)??[]).length,2);
   // Missing data must never render as a green absence pill.
   assert.equal((html.match(/severity-none/g)??[]).length,0);
   assert.match(html,/Not yet rated/);
   assert.doesNotMatch(html,/An easy family watch/);
   // Humour applies for an ordinary report; a green pill never does.
   assert.match(html,/John Wick is coming\./);
-  assert.equal((html.match(/<h3>/g)??[]).length,14);
+  assert.equal((html.match(/<h3>/g)??[]).length,22);
 });
 
 test('protected and unassessed categories have identical default HTML with universal reveal',()=>{

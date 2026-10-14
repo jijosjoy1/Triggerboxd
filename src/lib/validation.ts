@@ -67,7 +67,7 @@ export function parseContributionInput(value: unknown): PutContributionInput {
     const category = rating.category as CategorySlug;
     if (seen.has(category)) throw new ValidationError('ratings', 'Assess each category once.');
     seen.add(category);
-    return { category, severity: integer(rating.severity, 'severity', 0, 3) as Severity };
+    return { category, severity: integer(rating.severity, 'severity', 0, 5) as Severity };
   });
   return { expectedRevision, watched: true, ratings };
 }

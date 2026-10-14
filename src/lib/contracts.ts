@@ -3,24 +3,27 @@ export const CATEGORY_SLUGS = [
   'nudity', 'sexual_content', 'sexual_violence', 'gore_graphic_violence',
   'disturbing_content', 'suicide_self_harm',
   'animal_harm', 'drugs', 'alcohol', 'language', 'physical_violence',
+  'graphic_violence', 'horror',
 ] as const;
 
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
-export type Severity = 0 | 1 | 2 | 3;
+export type Severity = 0 | 1 | 2 | 3 | 4 | 5;
 export type WarningSpoilerLevel = 0 | 1 | 2;
 export const WARNING_DESCRIPTOR_IDS: Readonly<Record<CategorySlug, readonly string[]>> = {
   nudity: ['male_nudity','female_nudity','partial_nudity','full_frontal_nudity','brief_nudity','prolonged_nudity','sexual_nudity','non_sexual_nudity'],
   sexual_content: ['kissing','intimacy','sexual_activity'],
   sexual_violence: ['rape','attempted_rape','sexual_assault','sexual_harassment','sexual_coercion','implied_sexual_violence','offscreen_sexual_violence','graphic_sexual_violence'],
-  gore_graphic_violence: ['blood','graphic_injury'],
+  gore_graphic_violence: ['blood','graphic_injury','body_horror','vomiting','decomposition','disturbing_medical','exposed_organs'],
   disturbing_content: [], suicide_self_harm: [],
   animal_harm: ['animal_distress','animal_injury','animal_cruelty','animal_death'],
   drugs: ['recreational_drug_use','drug_addiction','overdose'],
   alcohol: ['alcohol_consumption','intoxication','alcohol_abuse'],
   language: ['profanity','slurs'],
   physical_violence: ['physical_assault','torture','domestic_violence'],
+  graphic_violence: ['bloody_killing','dismemberment','decapitation','brutal_attack','visible_bloodshed'],
+  horror: ['jump_scare','psychological_fear','paranormal_activity','frightening_creature','creepy_atmosphere'],
 };
-export type SeverityDistribution = [number, number, number, number];
+export type SeverityDistribution = [number, number, number, number, number, number];
 
 export interface CategoryRating {
   category: CategorySlug;

@@ -4,7 +4,11 @@ import { CATEGORY_SLUGS, type CategorySlug } from '../lib/contracts';
 import { formatTimestamp, parseTimestamp, type MovieNote, type MovieNotes } from '../lib/scene-contracts';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
 
-const label=(s:string)=>s.replaceAll('_',' ');
+const label=(s:string)=>({
+ gore_graphic_violence:'Gore / disturbing visuals',
+ graphic_violence:'Graphic violence / bloodshed',
+ horror:'Horror / frightening content',
+} as Record<string,string>)[s]??s.replaceAll('_',' ');
 async function read<T>(response:Response):Promise<T>{let body;try{body=await response.json();}catch{throw new Error('Unable to reach the service. Please try again.');}if(!response.ok)throw new Error(body.error?.message??'Unable to complete this request.');return body.data;}
 export function MovieScenes({movieId,onChanged,watched=false,readOnly=false}:{movieId:string;onChanged?:()=>void;watched?:boolean;readOnly?:boolean}){
  const [open,setOpen]=useState(false);const {session}=useAuthSession();
@@ -54,7 +58,7 @@ function ScenePanel({movieId,signedIn,onChanged,watched,readOnly}:{movieId:strin
   <p role="status" aria-live="polite">{loading?'Loading notes…':status}</p>
   {!loading&&!status&&page.notes.length===0&&<p>No public notes in this view.</p>}
   <ul className="mvp-scene-list">{page.notes.map(note=><li key={note.id}>
-   <strong>{label(note.category)}</strong> {note.severity!=null&&<span> · {['None','Mild','Moderate','Severe'][note.severity]}</span>} {note.startSeconds!==null&&<span>{formatTimestamp(note.startSeconds)}{note.endSeconds!==null?` – ${formatTimestamp(note.endSeconds)}`:''}</span>}
+   <strong>{label(note.category)}</strong> {note.severity!=null&&<span> · {['None','Mild','Moderate','Severe','Very severe','Extreme'][note.severity]}</span>} {note.startSeconds!==null&&<span>{formatTimestamp(note.startSeconds)}{note.endSeconds!==null?` – ${formatTimestamp(note.endSeconds)}`:''}</span>}
    {note.version&&<p>Version: {note.version}</p>}
    {note.comment===null?<button type="button" disabled={loading} onClick={()=>void load(0,1,note.category)}>Reveal details for this category</button>:<p className="mvp-scene-comment">{note.comment}</p>}
    {signedIn&&<button type="button" onClick={()=>setReport(note)}>Report / suggest correction</button>}
@@ -100,7 +104,7 @@ function NoteForm({note,save,cancel,watched,category}:{note:MovieNote|null;save:
  }catch(e){setMessage(e instanceof Error?e.message:'Unable to save.');}finally{setBusy(false);}}
  return <form onSubmit={submit} className="mvp-scene-form"><h3>{note?'Edit note':'Add optional note or scene'}</h3>
   {category?<p className="fine">Category: {label(category)}</p>:<label>Category <select name="category" defaultValue={note?.category??'nudity'}>{CATEGORY_SLUGS.map(c=><option key={c} value={c}>{label(c)}</option>)}</select></label>}
-  <label>Severity (optional)<select name="severity" defaultValue={note?.severity??''}><option value="">Unknown / not assessed</option><option value="0">None</option><option value="1">Mild</option><option value="2">Moderate</option><option value="3">Severe</option></select></label>
+  <label>Severity (optional)<select name="severity" defaultValue={note?.severity??''}><option value="">Unknown / not assessed</option><option value="0">None</option><option value="1">Mild</option><option value="2">Moderate</option><option value="3">Severe</option><option value="4">Very severe</option><option value="5">Extreme</option></select></label>
   <label>Comment (optional, up to 280 characters)<textarea name="comment" maxLength={280} defaultValue={note?.comment??''}/></label>
   <label>Start (optional, HH:MM:SS)<input name="start" placeholder="00:12:30" defaultValue={formatTimestamp(note?.startSeconds??null)}/></label>
   <label>End (optional, HH:MM:SS)<input name="end" placeholder="00:13:00" defaultValue={formatTimestamp(note?.endSeconds??null)}/></label>

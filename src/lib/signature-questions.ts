@@ -1,5 +1,5 @@
-export const CONTENT_SEVERITIES = ['None', 'Mild', 'Moderate', 'Severe'] as const;
-export type ContentSeverity = 0 | 1 | 2 | 3;
+export const CONTENT_SEVERITIES = ['None', 'Mild', 'Moderate', 'Severe', 'Very severe', 'Extreme'] as const;
+export type ContentSeverity = 0 | 1 | 2 | 3 | 4 | 5;
 export const FAMILY_AWKWARDNESS_LEVELS = [1, 2, 3, 4, 5] as const;
 export type FamilyAwkwardnessLevel = (typeof FAMILY_AWKWARDNESS_LEVELS)[number];
 export type SpoilerLevel = 0 | 1 | 2;
@@ -8,20 +8,22 @@ export const CATEGORY_SPOILER_PLACEHOLDER = 'Additional spoiler-sensitive inform
 export const DESCRIPTION_SPOILER_PLACEHOLDER = 'Details hidden to avoid spoilers.';
 export const UNRATED_VERDICT = 'Not yet rated';
 export const UNRATED_INDICATOR = '⚪';
-export const MORE_QUESTIONS_LABEL = 'Show 3 more ↓';
+export const MORE_QUESTIONS_LABEL = 'Show 2 more ↓';
 export const FAMILY_INDICATORS = ['🟢','🟡','🟠','🔴','💀'] as const;
 
 export type SignatureQuestionId =
   | 'parents'
   | 'biryani'
+  | 'graphic-violence'
+  | 'horror'
   | 'animal-harm'
   | 'drugs'
   | 'sexual-violence'
   | 'alcohol'
-  | 'language'
-  | 'physical-violence';
+  | 'language';
 
 type SeverityCopy = readonly [none: string, mild: string, moderate: string, severe: string];
+type ExtendedSeverityCopy = readonly [none: string, mild: string, moderate: string, severe: string, verySevere: string, extreme: string];
 
 export type SignatureQuestion = {
   id: SignatureQuestionId;
@@ -31,9 +33,9 @@ export type SignatureQuestion = {
   initiallyVisible: boolean;
   scale: 'family-awkwardness' | 'content-severity';
   /** One-line, report-based copy in None, Mild, Moderate, Severe order. */
-  verdicts?: SeverityCopy;
+  verdicts?: SeverityCopy | ExtendedSeverityCopy;
   /** Factual copy used for serious harm and all sexual-violence reports. */
-  factualVerdicts?: SeverityCopy;
+  factualVerdicts?: ExtendedSeverityCopy;
 };
 
 export const signatureQuestions: readonly SignatureQuestion[] = [
@@ -46,7 +48,7 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
   },
   {
     id: 'biryani',
-    prompt: 'Can you eat biryani while watching?',
+    prompt: 'Can you finish your biryani?',
     icon: '🍛',
     initiallyVisible: true,
     scale: 'content-severity',
@@ -61,6 +63,34 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
       'Limited graphic imagery reported.',
       'Noticeable graphic imagery reported.',
       'Strong or sustained graphic imagery reported.',
+      'Very strong graphic imagery reported.',
+      'Extreme graphic imagery reported.',
+    ],
+  },
+  {
+    id: 'graphic-violence', prompt: 'Heads rolling or blood splattering?', icon: '🩸',
+    initiallyVisible: true, scale: 'content-severity',
+    verdicts: [
+      'No graphic violence reported.', 'Some bloodshed reported.',
+      'Bloody violence gets noticeable.', 'Brutal violence and bloodshed reported.',
+    ],
+    factualVerdicts: [
+      'No graphic violence reported.', 'Limited graphic violence reported.',
+      'Noticeable graphic violence reported.', 'Severe graphic violence reported.',
+      'Very severe graphic violence reported.', 'Extreme graphic violence reported.',
+    ],
+  },
+  {
+    id: 'horror', prompt: 'Will you sleep tonight?', icon: '👻',
+    initiallyVisible: true, scale: 'content-severity',
+    verdicts: [
+      'No frightening content reported.', 'Sweet dreams guaranteed.', 'Maybe leave a light on.',
+      'That shadow looks suspicious.', 'Sleep is officially cancelled.', 'Even the ghosts are scared.',
+    ],
+    factualVerdicts: [
+      'No frightening content reported.', 'Limited frightening content reported.',
+      'Noticeable frightening content reported.', 'Severe frightening content reported.',
+      'Very severe frightening content reported.', 'Extreme frightening content reported.',
     ],
   },
   {
@@ -80,6 +110,8 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
       'Limited animal harm reported.',
       'Noticeable animal harm reported.',
       'Strong or sustained animal harm reported.',
+      'Very strong animal harm reported.',
+      'Extreme animal harm reported.',
     ],
   },
   {
@@ -99,6 +131,8 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
       'Limited drug-related content reported.',
       'Noticeable drug-related content reported.',
       'Strong or sustained drug-related content reported.',
+      'Very strong drug-related content reported.',
+      'Extreme drug-related content reported.',
     ],
   },
   {
@@ -112,6 +146,8 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
       'Limited sexual violence content reported.',
       'Moderate sexual violence content reported.',
       'Severe sexual violence content reported.',
+      'Very severe sexual violence content reported.',
+      'Extreme sexual violence content reported.',
     ],
   },
   {
@@ -131,6 +167,8 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
       'Limited alcohol-related content reported.',
       'Noticeable alcohol-related content reported.',
       'Strong or sustained alcohol-related content reported.',
+      'Very strong alcohol-related content reported.',
+      'Extreme alcohol-related content reported.',
     ],
   },
   {
@@ -150,25 +188,8 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
       'Occasional profanity reported.',
       'Frequent profanity reported.',
       'Strong or persistent profanity reported.',
-    ],
-  },
-  {
-    id: 'physical-violence',
-    prompt: 'Does everyone need health insurance?',
-    icon: '🥊',
-    initiallyVisible: false,
-    scale: 'content-severity',
-    verdicts: [
-      'Everyone’s walking away — no physical violence reported.',
-      'A few bruises.',
-      'The hospital is getting busy.',
-      'Severe physical violence reported.',
-    ],
-    factualVerdicts: [
-      'No physical violence reported.',
-      'Limited physical violence reported.',
-      'Noticeable physical violence reported.',
-      'Severe physical violence reported.',
+      'Very strong or persistent profanity reported.',
+      'Extreme or persistent profanity reported.',
     ],
   },
 ] as const;
@@ -196,7 +217,7 @@ export const SERIOUS_HARM_DESCRIPTORS: Readonly<Record<string, readonly string[]
 };
 
 export const isSeriousHarm = (category: string, descriptors?: readonly string[], severity?: ContentSeverity | null): boolean => {
-  if (severity !== undefined && ['drugs','alcohol','physical_violence'].includes(category) && (severity === 3 || (severity !== 0 && !descriptors?.length))) return true;
+  if (severity != null && ['drugs','alcohol','physical_violence'].includes(category) && (severity >= 3 || (severity !== 0 && !descriptors?.length))) return true;
   if (!descriptors?.length) return false;
   const serious = SERIOUS_HARM_DESCRIPTORS[category];
   return !!serious && descriptors.some(descriptor => serious.includes(descriptor));
@@ -209,7 +230,7 @@ function isSpoilerLevel(value: unknown): value is SpoilerLevel {
 }
 
 function isSeverity(value: unknown): value is ContentSeverity {
-  return Number.isInteger(value) && typeof value === 'number' && value >= 0 && value <= 3;
+  return Number.isInteger(value) && typeof value === 'number' && value >= 0 && value <= 5;
 }
 
 function hiddenText(spoilerLevel: unknown): string | null {
@@ -232,7 +253,7 @@ export function getSignatureVerdict(
   if (hidden) return hidden;
   const question = byId.get(questionId as SignatureQuestionId);
   if (!question || question.scale !== 'content-severity' || !isSeverity(severity)) return UNRATED_VERDICT;
-  const verdicts = question.id === 'sexual-violence' || seriousHarm
+  const verdicts = question.id === 'sexual-violence' || seriousHarm || (isSeverity(severity) && severity >= 4 && question.id !== 'horror')
     ? question.factualVerdicts
     : question.verdicts;
   return verdicts?.[severity] ?? UNRATED_VERDICT;

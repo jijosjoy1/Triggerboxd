@@ -39,7 +39,7 @@ test('every playful question has keyboard-readable help without film-specific co
     const html=renderToStaticMarkup(React.createElement(QuestionHelp,{id:question.id,prompt:question.prompt}));
     assert.match(html,/aria-expanded="false"/);assert.match(html,/aria-controls=/);assert.match(html,/hidden=""/);
   }
-  assert.match(QUESTION_HELP.biryani,/Gore and graphic injury/);
+  assert.match(QUESTION_HELP.biryani,/Gore and disturbing visuals/);
   assert.match(QUESTION_HELP.biryani,/not food content/);
 });
 test('movie popup offers real separate actions and discloses device-only saving',()=>{

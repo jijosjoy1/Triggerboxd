@@ -16,14 +16,14 @@ writeFileSync(path.join(build, 'signature-questions.js'), compiled.outputText);
 const catalog = require(path.join(build, 'signature-questions.js'));
 process.on('exit', () => rmSync(build, { recursive: true, force: true }));
 
-test('catalog has eight questions with the first five visible', () => {
-  assert.equal(catalog.signatureQuestions.length, 8);
-  assert.deepEqual(catalog.signatureQuestions.map(question => question.initiallyVisible), [true, true, true, true, true, false, false, false]);
-  assert.equal(new Set(catalog.signatureQuestions.map(question => question.id)).size, 8);
+test('catalog has nine questions with the first seven visible', () => {
+  assert.equal(catalog.signatureQuestions.length, 9);
+  assert.deepEqual(catalog.signatureQuestions.map(question => question.initiallyVisible), [true, true, true, true, true, true, true, false, false]);
+  assert.equal(new Set(catalog.signatureQuestions.map(question => question.id)).size, 9);
 });
 
-test('content severity is a four-level scale and family awkwardness is a separate five-level scale', () => {
-  assert.deepEqual(catalog.CONTENT_SEVERITIES, ['None', 'Mild', 'Moderate', 'Severe']);
+test('content severity is a six-value scale and family awkwardness is a separate five-level scale', () => {
+  assert.deepEqual(catalog.CONTENT_SEVERITIES, ['None', 'Mild', 'Moderate', 'Severe', 'Very severe', 'Extreme']);
   assert.deepEqual(catalog.FAMILY_AWKWARDNESS_LEVELS, [1, 2, 3, 4, 5]);
   assert.equal(catalog.signatureQuestions[0].scale, 'family-awkwardness');
   assert.ok(catalog.signatureQuestions.slice(1).every(question => question.scale === 'content-severity'));
@@ -34,6 +34,19 @@ test('missing assessments always produce neutral unrated text', () => {
     assert.equal(catalog.getSignatureVerdict(question.id, null, 0, false), 'Not yet rated');
   }
   assert.equal(catalog.getFamilyAwkwardnessVerdict(null, 0), 'Not yet rated');
+});
+
+test('graphic violence and horror have independent questions and horror verdicts', () => {
+  const questions = Object.fromEntries(catalog.signatureQuestions.map(question => [question.id, question]));
+  assert.equal(questions.biryani.prompt, 'Can you finish your biryani?');
+  assert.equal(questions['graphic-violence'].prompt, 'Heads rolling or blood splattering?');
+  assert.equal(questions.horror.prompt, 'Will you sleep tonight?');
+  assert.deepEqual([1, 2, 3, 4, 5].map(level => catalog.getSignatureVerdict('horror', level, 0, false)), [
+    'Sweet dreams guaranteed.', 'Maybe leave a light on.', 'That shadow looks suspicious.',
+    'Sleep is officially cancelled.', 'Even the ghosts are scared.',
+  ]);
+  assert.equal(catalog.getSignatureVerdict('horror', null, 0, false), 'Not yet rated');
+  assert.equal(catalog.getSignatureVerdict('horror', 0, 0, false), 'No frightening content reported.');
 });
 
 test('family awkwardness has five independent labels and never derives from content severity', () => {
@@ -104,7 +117,6 @@ test('ordinary reports keep the entertaining verdicts', () => {
   assert.equal(playful('biryani'), 'Eat peacefully — no graphic imagery reported.');
   assert.equal(playful('animal-harm'), 'John can relax — no animal harm reported.');
   assert.equal(playful('language'), 'Sunday school vocabulary — no profanity reported.');
-  assert.equal(playful('physical-violence'), 'Everyone’s walking away — no physical violence reported.');
   assert.equal(catalog.getFamilyAwkwardnessVerdict(1, 0), 'Even grandma can join.');
   assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, false), 'Even the biryani wants to leave.');
   assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, true), 'Strong or sustained graphic imagery reported.');
@@ -117,14 +129,14 @@ test('animal severity copy describes intensity without asserting animal-death de
   }
 });
 
-test('every severity level maps to distinct four-level copy with no invented levels', () => {
+test('every severity level maps to distinct copy and original four levels remain', () => {
   for (const question of catalog.signatureQuestions.filter(q => q.scale === 'content-severity')) {
     const playful = question.verdicts ?? question.factualVerdicts;
     const factual = question.factualVerdicts;
-    assert.equal(playful?.length, 4, `${question.id} humour copy has one entry per severity`);
-    assert.equal(factual?.length, 4, `${question.id} factual copy has one entry per severity`);
-    assert.equal(new Set(playful).size, 4, `${question.id} severity copy is distinct per level`);
-    assert.equal(new Set(factual).size, 4);
+    assert.ok(playful?.length === 4 || playful?.length === 6);
+    assert.equal(factual?.length, 6, `${question.id} factual copy has one entry per severity`);
+    assert.equal(new Set(playful).size, playful.length, `${question.id} severity copy is distinct per level`);
+    assert.equal(new Set(factual).size, 6);
   }
 });
 

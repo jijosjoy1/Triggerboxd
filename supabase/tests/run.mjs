@@ -39,6 +39,13 @@ try {
         insert into public.category_ratings(contribution_id,category_slug,severity) values('90000000-0000-4000-8000-000000000003','suicide_self_harm',2);
       `);
     }
+    if (file.includes('graphic_violence_horror_warning_scale')) {
+      await db.exec(`
+        insert into public.category_ratings(contribution_id,category_slug,severity) values
+          ('90000000-0000-4000-8000-000000000003','gore_graphic_violence',3),
+          ('90000000-0000-4000-8000-000000000003','physical_violence',2);
+      `);
+    }
     const sql = await readFile(path.join(root, 'migrations', file), 'utf8');
     if (!sql.trim()) throw new Error(`Empty migration: ${file}`);
     await db.exec(sql);
@@ -49,12 +56,14 @@ try {
     }
     console.log(`APPLIED ${file}`);
   }
-  const preserved = await db.query(`select severity,spoiler_level from public.category_ratings where contribution_id='90000000-0000-4000-8000-000000000003' and category_slug='suicide_self_harm'`);
-  if (preserved.rows[0]?.severity !== 2 || preserved.rows[0]?.spoiler_level !== 0) throw new Error('Historical assessment lost during migration');
-  console.log('PASS historical assessment preserved across additive migration');
+  const preserved = await db.query(`select category_slug,severity,spoiler_level from public.category_ratings where contribution_id='90000000-0000-4000-8000-000000000003' order by category_slug`);
+  const expected = [['gore_graphic_violence',3],['physical_violence',2],['suicide_self_harm',2]];
+  if (JSON.stringify(preserved.rows.map(row => [row.category_slug,row.severity])) !== JSON.stringify(expected)
+    || preserved.rows.some(row => row.spoiler_level !== 0)) throw new Error('Historical assessment lost or reclassified during migration');
+  console.log('PASS historical gore, physical violence and self-harm assessments preserved');
   await db.exec(`delete from auth.users where id='90000000-0000-4000-8000-000000000001'; delete from public.movies where id='90000000-0000-4000-8000-000000000002';`);
   const results = [];
-  for (const testFile of ['launch.sql','product-foundation.sql','public-import.sql','movie-notes.sql','representation-family.sql']) {
+  for (const testFile of ['launch.sql','product-foundation.sql','public-import.sql','movie-notes.sql','representation-family.sql','warning-scale.sql']) {
     results.push(...await db.exec(await readFile(path.join(root, 'tests', testFile), 'utf8')));
   }
   const assertions = results.flatMap(result => result.rows ?? []).filter(row => 'passed' in row);

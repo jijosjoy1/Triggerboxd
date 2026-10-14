@@ -14,6 +14,11 @@ test('note writes require watched, revision, known categories and bounded plain 
  for(const change of [{watched:false},{expectedRevision:-1},{category:'unknown'},{spoilerLevel:3},{comment:'x'.repeat(281)},{version:'x'.repeat(81)},{startSeconds:86401},{html:true},{comment:'a\u0000b'}])assert.throws(()=>c.parseNoteInput({...note,...change}));
  assert.equal(c.parseNoteInput({...note,comment:'<script>alert(1)</script>'}).comment,'<script>alert(1)</script>');
 });
+test('notes accept independent horror and graphic violence severity through five',()=>{
+ assert.equal(c.parseNoteInput({...note,category:'horror',severity:5}).severity,5);
+ assert.equal(c.parseNoteInput({...note,category:'graphic_violence',severity:4}).severity,4);
+ assert.throws(()=>c.parseNoteInput({...note,category:'horror',severity:6}));
+});
 test('timestamps round trip midnight and enforce hours minutes seconds',()=>{
  assert.equal(c.parseTimestamp('00:00:00'),0);assert.equal(c.formatTimestamp(0),'00:00:00');
  assert.equal(c.parseTimestamp('02:12:35'),7955);assert.equal(c.formatTimestamp(7955),'02:12:35');

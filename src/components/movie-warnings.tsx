@@ -11,30 +11,50 @@ import { CATEGORIES, SEVERITY_LABELS, type Severity } from './real-contribution'
 import { UnifiedContribution } from './unified-contribution';
 import { signatureQuestions, getSignatureVerdict, isSeriousHarm, UNRATED_INDICATOR, UNRATED_VERDICT, MORE_QUESTIONS_LABEL } from '../lib/signature-questions';
 import { FamilyVote, SelectiveReveal, SynopsisReveal } from './movie-product-controls';
-import type { CategorySlug as AllCategorySlug } from '../lib/contracts';
+import type { CategorySlug as AllCategorySlug, SeverityDistribution } from '../lib/contracts';
 
-export type MovieWarning = { category: AllCategorySlug; severity: Severity | null; count: number; distribution: [number, number, number, number]; provisional: boolean; disputed: boolean; descriptors?: string[] };
+export type MovieWarning = { category: AllCategorySlug; severity: Severity | null; count: number; distribution: SeverityDistribution; provisional: boolean; disputed: boolean; descriptors?: string[] };
 export type Movie = { id: string; tmdbId: number; title: string; originalTitle: string; year: number | null; language: string | null; posterPath: string | null; synopsis?: string | null; warnings: MovieWarning[]; contributorCount: number };
+
+const DETAILED_CATEGORIES = [
+  ...CATEGORIES.slice(0, 4).map(({ slug, label }) => ({ slug, label: slug === 'gore_graphic_violence' ? 'Gore / disturbing visuals' : label })),
+  { slug: 'graphic_violence', label: 'Graphic violence / bloodshed' },
+  { slug: 'horror', label: 'Horror / frightening content' },
+  ...CATEGORIES.slice(4).map(({ slug, label }) => ({ slug, label })),
+  { slug: 'animal_harm', label: 'Animal harm' }, { slug: 'drugs', label: 'Drugs' },
+  { slug: 'alcohol', label: 'Alcohol' }, { slug: 'language', label: 'Language' },
+  { slug: 'physical_violence', label: 'Physical violence' },
+] as const;
 
 function FactualWarnings({ warnings, contributorCount }: { warnings: MovieWarning[]; contributorCount: number }) {
   return <section className="mvp-warning-guide" aria-labelledby="warnings-title"><div className="mvp-warning-heading"><div><span className="label">CONTENT AT A GLANCE</span><h2 id="warnings-title">Viewer content guide</h2></div><p className="mvp-count"><strong>{contributorCount}</strong> {contributorCount === 1 ? 'contributor' : 'contributors'}</p></div>
     <p className="fine">Community reports describe intensity, not suitability. Not shown can mean unassessed or protected information. Fewer than three assessments are provisional.</p>
-    <ul className="mvp-warning-list">{CATEGORIES.map(category => {
+    <ul className="mvp-warning-list">{DETAILED_CATEGORIES.map(category => {
       const warning = warnings.find(item => item.category === category.slug);
       const severity = warning?.severity ?? null;
       const label = severity === null ? 'Not shown' : SEVERITY_LABELS[severity];
       const count = warning?.count ?? 0;
-      return <li key={category.slug}><div className="mvp-warning-row"><h3>{category.label}</h3><span className={`severity severity-${severity === null ? 'unknown' : label.toLowerCase()}`}><span aria-hidden="true">{severity === null ? '?' : severity === 0 ? '○' : '●'}</span>{label}</span></div>
+      return <li key={category.slug}><div className="mvp-warning-row"><h3>{category.label}</h3><span className={`severity severity-${severity === null ? 'unknown' : label.toLowerCase().replaceAll(' ', '-')}`}><span aria-hidden="true">{severity === null ? '?' : severity === 0 ? '○' : '●'}</span>{label}</span></div>
         <div className="mvp-warning-meta"><span>{count} {count === 1 ? 'assessment' : 'assessments'}</span>{warning?.provisional && count > 0 ? <span className="mvp-tag">Provisional</span> : null}{warning?.disputed ? <strong className="mvp-dispute">Reports differ</strong> : null}</div>
         {warning?.descriptors?.length ? <p className="fine">Reported details: {warning.descriptors.map(value => value.replaceAll('_', ' ')).join(' · ')}</p> : null}
-        {count > 0 && warning ? <dl className="mvp-distribution" aria-label={`${category.label}: reported severity counts`}>{SEVERITY_LABELS.map((level, index) => <div key={level}><dt>{level}</dt><dd>{warning.distribution[index]}</dd></div>)}</dl> : <p className="fine mvp-unknown">Not shown · Check. Unassessed and protected information use the same presentation.</p>}
+        {count > 0 && warning ? <dl className="mvp-distribution" aria-label={`${category.label}: reported severity counts`}>{SEVERITY_LABELS.map((level, index) => <div key={level}><dt>{level}</dt><dd>{warning.distribution[index] ?? 0}</dd></div>)}</dl> : <p className="fine mvp-unknown">No public reports shown for this topic. Some information may be protected.</p>}
       </li>;
     })}</ul>
     <p className="fine">The label summarizes the submitted reports. The counts show the full range, including severe reports when the summary is None. Different releases or cuts can contain different material.</p>
   </section>;
 }
 
-const questionCategories: Record<string, AllCategorySlug> = { biryani: 'gore_graphic_violence', 'animal-harm': 'animal_harm', drugs: 'drugs', 'sexual-violence': 'sexual_violence', alcohol: 'alcohol', language: 'language', 'physical-violence': 'physical_violence' };
+const questionCategories: Record<string, AllCategorySlug> = { biryani: 'gore_graphic_violence', 'graphic-violence': 'graphic_violence', horror: 'horror', 'animal-harm': 'animal_harm', drugs: 'drugs', 'sexual-violence': 'sexual_violence', alcohol: 'alcohol', language: 'language' };
+const questionLabels: Record<string, string> = {
+  biryani: 'Gore & disturbing visuals',
+  'graphic-violence': 'Graphic violence & bloodshed',
+  horror: 'Horror & frightening content',
+};
+const noReportsCopy: Record<string, string> = {
+  biryani: 'No disturbing visual content reports shown yet.',
+  'graphic-violence': 'No graphic violence reports shown yet.',
+  horror: 'No frightening content reports shown yet.',
+};
 
 /**
  * A missing rating must never read as a safe verdict. Unknown is neutral grey and
@@ -43,7 +63,7 @@ const questionCategories: Record<string, AllCategorySlug> = { biryani: 'gore_gra
 function SeverityBadge({ severity }: { severity: Severity | null }) {
   if (severity === null) return <span className="severity severity-unrated"><span aria-hidden="true">{UNRATED_INDICATOR}</span>{UNRATED_VERDICT}</span>;
   const label = SEVERITY_LABELS[severity];
-  return <span className={`severity severity-${label.toLowerCase()}`}><span aria-hidden="true">{severity === 0 ? '○' : '●'}</span>{label}</span>;
+  return <span className={`severity severity-${label.toLowerCase().replaceAll(' ', '-')}`}><span aria-hidden="true">{severity === 0 ? '○' : '●'}</span>{label}</span>;
 }
 
 export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey = 0, watched = false, onGuideChanged }: { warnings: MovieWarning[]; contributorCount: number; movieId?: string; refreshKey?: number; watched?: boolean; onGuideChanged?: () => void }) {
@@ -55,7 +75,8 @@ export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey 
     const warning = category ? effective.find(item => item.category === category) : undefined;
     const severity = warning?.severity ?? null;
     return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>
-      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /></> : severity !== null ? <p className="fine">{getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors, severity))}</p> : null}
+      {questionLabels[question.id] ? <p className="question-category">{questionLabels[question.id]}</p> : null}
+      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /></> : severity !== null ? <p className="fine">{getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors, severity))}</p> : noReportsCopy[question.id] ? <p className="fine">{noReportsCopy[question.id]}</p> : null}
       {question.id!=='parents' ? <SeverityBadge severity={severity}/> : null}
     </div></li>;
   }); }
