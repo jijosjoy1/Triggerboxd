@@ -47,3 +47,17 @@ test('caption wraps at words while unusually long titles stay bounded',()=>{
   const ctx={measureText:text=>({width:text.length*10})};
   assert.deepEqual(wrapStoryText(ctx,'WhatsApp looks interesting.',150,4),['WhatsApp looks','interesting.']);
 });
+
+ test('poster is included proportionally without cropping and warnings stay protected',()=>{
+  const images=[],printed=[];
+  const ctx={save(){},restore(){},translate(){},scale(){},rotate(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fillRect(){},strokeRect(){},drawImage(...args){images.push(args)},fillText(text){printed.push(text)},measureText:text=>({width:text.length*10})};
+  const poster={naturalWidth:600,naturalHeight:900};
+  drawStoryCard({getContext:()=>ctx},'Film',null,undefined,{category:'sexual_violence',severity:3,spoilerLevel:2},false,poster);
+  assert.equal(images.length,1);assert.equal(images[0][0],poster);
+  assert.equal(images[0].length,5);assert.equal(images[0][4],400);
+  assert.ok(Math.abs(images[0][3]/images[0][4]-2/3)<0.0001);
+  assert.doesNotMatch(printed.join(' '),/sexual violence|Severe/);
+  images.length=0;
+  drawStoryCard({getContext:()=>ctx},'Film',null,undefined,undefined,false,{naturalWidth:0,naturalHeight:0});
+  assert.equal(images.length,0);
+ });

@@ -85,7 +85,7 @@ export function drawFamilyArt(ctx:CanvasRenderingContext2D,level:number|null) {
   ctx.restore();
 }
 
-export function drawStoryCard(canvas: HTMLCanvasElement, title: string, summary: FamilySummaryResult['familySummary'] | null, movieId?:string, warning?:CategoryRating, personal=false) {
+export function drawStoryCard(canvas: HTMLCanvasElement, title: string, summary: FamilySummaryResult['familySummary'] | null, movieId?:string, warning?:CategoryRating, personal=false, poster?:HTMLImageElement|null) {
   canvas.width=1080;canvas.height=1920;
   const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Your browser could not create the image. Copy the film link instead.');
   const level=storyLevel(summary,personal);
@@ -95,7 +95,13 @@ export function drawStoryCard(canvas: HTMLCanvasElement, title: string, summary:
   ctx.strokeStyle='#222d29';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(90,232);ctx.lineTo(990,232);ctx.stroke();
   ctx.font='bold 72px Georgia';wrapStoryText(ctx,title,900,3).forEach((line,i)=>ctx.fillText(line,90,333+i*86));
   if(warning){ctx.font='28px sans-serif';ctx.fillStyle='#222d29';ctx.fillText(storyWarningText(warning),90,586);}
-  drawFamilyArt(ctx,level);
+  if(poster && poster.naturalWidth>0 && poster.naturalHeight>0){
+    const scale=Math.min(400/poster.naturalWidth,400/poster.naturalHeight);
+    const width=poster.naturalWidth*scale,height=poster.naturalHeight*scale;
+    ctx.drawImage(poster,310-width/2,790-height/2,width,height);
+    ctx.save();ctx.translate(200,395);ctx.scale(0.5,0.5);drawFamilyArt(ctx,level);ctx.restore();
+    ctx.font='18px sans-serif';ctx.fillStyle='#222d29';ctx.fillText('Poster via TMDb',90,1020);
+  }else drawFamilyArt(ctx,level);
   ctx.fillStyle='#222d29';ctx.font='bold 65px sans-serif';ctx.textAlign='center';
   wrapStoryText(ctx,storyCaption(summary,personal),880,3).forEach((line,i)=>ctx.fillText(line,540,1080+i*80));
   ctx.font='32px monospace';ctx.fillText('AWKWARDNESS METER',540,1275);

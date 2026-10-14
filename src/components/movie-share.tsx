@@ -50,7 +50,7 @@ function isAbort(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
 }
 
-export function MovieShare({ movieId, title }: { movieId: string; title: string }) {
+export function MovieShare({ movieId, title, posterPath }: { movieId: string; title: string; posterPath?: string|null }) {
   const [open, setOpen] = useState(false);
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null);
   const [nativeShare, setNativeShare] = useState(false);
@@ -136,7 +136,7 @@ export function MovieShare({ movieId, title }: { movieId: string; title: string 
           <li><a href={redditShareUrl(url, shareTitle)} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span>Share on Reddit</a></li>
         </ul>
         <label className="mvp-share-field">Film link<input className="mvp-share-url" type="text" value={url} readOnly spellCheck={false} aria-label="Canonical film link" onFocus={event => event.currentTarget.select()} /></label>
-        {open ? <MovieStory movieId={movieId} title={shareTitle} /> : null}
+        {open ? <MovieStory movieId={movieId} title={shareTitle} posterPath={posterPath} /> : null}
         <div className="mvp-share-feedback" role="status" aria-live="polite" data-visible={outcome?.state === 'success' ? 'true' : 'false'}>{outcome?.state === 'success' ? outcome.text : ''}</div>
         <div className="mvp-share-feedback mvp-share-error" role="alert" aria-live="assertive" data-visible={outcome?.state === 'error' ? 'true' : 'false'}>{outcome?.state === 'error' ? outcome.text : ''}</div>
         <button type="button" className="mvp-share-close" onClick={close}>Close</button>

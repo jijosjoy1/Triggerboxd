@@ -4,9 +4,10 @@ import { drawStoryCard } from '../lib/story-card';
 import type { FamilySummaryResult } from '../lib/representation-contracts';
 import type {CategoryRating} from '../lib/contracts';
 import { refreshAuthSession } from '../lib/supabase/browser';
+import {filmPoster} from '../lib/film-list';
 import {isUuid} from '../lib/validation';
 
-export function MovieStory({movieId,title,warning,ownFamilyValue}:{movieId:string;title:string;warning?:CategoryRating;ownFamilyValue?:number|null}) {
+export function MovieStory({movieId,title,posterPath,warning,ownFamilyValue}:{movieId:string;title:string;posterPath?:string|null;warning?:CategoryRating;ownFamilyValue?:number|null}) {
   const canvas=useRef<HTMLCanvasElement>(null),generation=useRef(0),imageVersion=useRef(0);
   const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
   const [summary,setSummary]=useState<FamilySummaryResult['familySummary']|null>(null),[personal,setPersonal]=useState(false);
@@ -19,12 +20,28 @@ export function MovieStory({movieId,title,warning,ownFamilyValue}:{movieId:strin
   useEffect(()=>{
     if(!open || !canvas.current)return;
     const version=++imageVersion.current;setFile(null);
-    try{
-      drawStoryCard(canvas.current,title,summary,movieId,warning,personal);
-      canvas.current.toBlob(blob=>{if(version===imageVersion.current && blob)setFile(new File([blob],`triggerboxd-${movieId}-story.png`,{type:'image/png'}));},'image/png');
-    }catch(e){setMessage(e instanceof Error?e.message:'Image unavailable.');}
-    return()=>{imageVersion.current++;};
-  },[open,title,summary,movieId,warning,personal]);
+    const target=canvas.current;
+    let image:HTMLImageElement|null=null;
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    const render=(poster:HTMLImageElement|null)=>{
+      if(version!==imageVersion.current)return;
+      if(timer)clearTimeout(timer);
+      if(image){image.onload=null;image.onerror=null;}
+      try{
+        drawStoryCard(target,title,summary,movieId,warning,personal,poster);
+        target.toBlob(blob=>{if(version===imageVersion.current){if(blob)setFile(new File([blob],`triggerboxd-${movieId}-story.png`,{type:'image/png'}));else setMessage('Image unavailable. Copy the movie link instead.');}},'image/png');
+      }catch(e){setMessage(e instanceof Error?e.message:'Image unavailable.');}
+    };
+    const url=filmPoster(posterPath??null,'w500');
+    if(url){
+      image=new Image();image.crossOrigin='anonymous';
+      image.onload=()=>render(image);
+      image.onerror=()=>{if(version===imageVersion.current)setMessage('Poster unavailable. Your card can still be shared.');render(null);};
+      timer=setTimeout(()=>{if(version===imageVersion.current)setMessage('Poster took too long to load. Your card can still be shared.');render(null);},8000);
+      image.src=url;
+    }else render(null);
+    return()=>{imageVersion.current++;if(timer)clearTimeout(timer);if(image){image.onload=null;image.onerror=null;}};
+  },[open,title,posterPath,summary,movieId,warning,personal]);
   async function check(){
     const version=generation.current;setBusy(true);setMessage('');
     try{

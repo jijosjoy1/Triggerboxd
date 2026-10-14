@@ -44,7 +44,7 @@ export function filmDestination(id: string, contribute = false) {
   return `/movies/${id}/${contribute ? '#contribute' : ''}`;
 }
 
-export function filmPoster(path: string | null, size: 'w185' | 'w342' = 'w342') {
+export function filmPoster(path: string | null, size: 'w185' | 'w342' | 'w500' = 'w342') {
   return path && /^\/[A-Za-z0-9_./-]+$/.test(path) && !path.includes('..') && !path.startsWith('//') ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 }
 
