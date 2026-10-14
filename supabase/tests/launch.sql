@@ -224,11 +224,18 @@ select test.assert('sitemap excludes hidden movies',public.get_indexable_movies(
 reset role;
 update private.request_buckets set expires_at=now()-interval '1 minute';
 update private.idempotency_keys set expires_at=now()-interval '1 minute';
+insert into private.request_buckets(action,subject_hash,window_start,window_seconds,count,expires_at)
+  values('search',repeat('f',64),date_trunc('minute',now()),60,1,now()+interval '1 hour');
+insert into private.idempotency_keys(actor_id,operation,key,body,response,expires_at)
+  values('00000000-0000-4000-8000-000000000001','put','retained-key','{}','{}',now()+interval '1 hour');
 set local role service_role;
 select public.expire_request_state();
 reset role;
-select test.assert('service cleanup deletes expired quota state',not exists(select 1 from private.request_buckets));
-select test.assert('service cleanup deletes expired idempotency state',not exists(select 1 from private.idempotency_keys));
+select test.assert('service cleanup deletes expired quota state',not exists(select 1 from private.request_buckets where expires_at<=now()));
+select test.assert('service cleanup deletes expired idempotency state',not exists(select 1 from private.idempotency_keys where expires_at<=now()));
+select test.assert('service cleanup preserves unexpired quota and retry state',
+  exists(select 1 from private.request_buckets where subject_hash=repeat('f',64))
+  and exists(select 1 from private.idempotency_keys where key='retained-key'));
 
 -- Explain the indexed lookup with a larger disposable fixture, not tiny-table assumptions.
 insert into auth.users(id,email_confirmed_at) select md5('plan-user-'||i)::uuid,now() from generate_series(1,5000) i;
