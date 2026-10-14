@@ -106,8 +106,8 @@ export function drawStoryCard(canvas:HTMLCanvasElement,title:string,summary:Fami
   ctx.fillStyle='#F7EBD5';ctx.font='bold 32px Arial';ctx.fillText(level===null?'—':`${level}/5`,540,1520);
   ctx.font='24px Arial';ctx.fillStyle='#B9ADA0';const evidence=personal?'MY VERDICT':`COMMUNITY VERDICT${summary&&summary.count>0?` · ${summary.count} viewer votes`:''}`;ctx.fillText(evidence,540,1555);
   ctx.font='20px Arial';ctx.fillText('Subjective family opinion. Not a safety guarantee.',540,1590);
-  ctx.font='bold 27px Arial';ctx.fillStyle='#FFFFFF';ctx.textAlign='left';ctx.fillText('TRIGGER',72,1638);ctx.fillStyle='#EF233C';ctx.fillText('BOXD',72+ctx.measureText('TRIGGER').width,1638);
-  ctx.font='22px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('Know what you’re walking into.',72,1669);ctx.textAlign='right';ctx.font='bold 25px Arial';ctx.fillText('triggerboxd.com',1008,1638);
+  ctx.textAlign='center';ctx.font='bold 32px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('triggerboxd.com',540,1638);
+  ctx.font='22px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText('View full warnings at the address above.',540,1669);
   ctx.textAlign='left';ctx.font='18px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText(artwork?'Artwork via TMDb':'Artwork unavailable',72,354);
 }
 
