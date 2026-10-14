@@ -14,5 +14,5 @@ export function AccountNavigation(){
     catch{setError('Sign-out failed. Please retry.');}
     finally{setBusy(false);}
   }
-  return session?.user?<span className="account-navigation"><button type="button" disabled={busy} onClick={logout}>{busy?'Signing out…':'Sign out'}</button>{error?<span className="fine" role="alert">{error}</span>:null}</span>:<Link href="/login/">Sign in</Link>;
+  return session?.user?<span className="account-navigation"><Link href="/contributions/">My contributions</Link><button type="button" disabled={busy} onClick={logout}>{busy?'Signing out…':'Sign out'}</button>{error?<span className="fine" role="alert">{error}</span>:null}</span>:<Link href="/login/">Sign in</Link>;
 }

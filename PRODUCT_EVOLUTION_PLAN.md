@@ -159,3 +159,11 @@ Validation: 103 tests passed; typecheck passed. Browser verified readable full v
 - The full poster fits proportionally beside the existing illustration; exported PNG retains warning protection and the movie URL.
 - Anonymous CORS image loading uses a separate w500 image size from the page thumbnail; failure or an eight-second timeout leaves an exportable illustration card. Stale loads are ignored.
 - Validation: 104 tests pass, TypeScript and OpenNext production build pass. Physical Instagram posting remains unverified.
+
+
+### Account contribution history — 2026-10-14
+- Added /contributions/ and signed-in navigation for saved warning and representation contributions, ordered by last update.
+- Private GET /api/v1/me/contributions uses the verified session, explicit user ownership, existing RLS, bounded pagination, and no-store responses. No warning contents or identities are returned.
+- Existing posters/cards, unavailable-film fallback, empty/error/loading states and sign-in prompt are reused. No schema or dependencies changed.
+- Family-only votes and scene notes are not included in this warning-contribution list. This is a current record list, not an audit log of every edit or deleted entry.
+- Validation: 105 tests pass; typecheck and Cloudflare production build pass.
