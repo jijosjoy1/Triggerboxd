@@ -167,3 +167,12 @@ Validation: 103 tests passed; typecheck passed. Browser verified readable full v
 - Existing posters/cards, unavailable-film fallback, empty/error/loading states and sign-in prompt are reused. No schema or dependencies changed.
 - Family-only votes and scene notes are not included in this warning-contribution list. This is a current record list, not an audit log of every edit or deleted entry.
 - Validation: 105 tests pass; typecheck and Cloudflare production build pass.
+
+
+### Cinematic Story cards — 2026-10-14
+- Replaced the thumbnail infographic with a full-bleed cinematic 1080x1920 canvas, gradual charcoal fade, restrained image-derived accents, large selected verdict, fixed five-colour meter and safe-area branding.
+- Added exactly five cohesive transparent SVG family reactions; existing verdict text, personal/community eligibility and spoiler protection remain authoritative. No LGBTQ+ inference or voting/database changes.
+- Reused the existing TMDb presentation request for validated backdrop metadata and existing year/genres; poster/backdrop selection and compact heading support varied artwork. No new image proxy, dependencies or rendering service.
+- Asset/font readiness, bounded CORS loading, shared image cache, stale callback guards and prepared PNG File preserve preview/export parity and user-gesture sharing.
+- Checks: 111 tests pass; typecheck; seven labelled visual fixtures covering all five reactions, varied art, missing art and long title; actual PNG header confirms 1080x1920; 320px/390px layouts, personal/community switching, backdrop changes and export-ready controls verified. Temporary test routes removed before build.
+- Luna accepted revised screenshots. Physical-phone Instagram Story handoff/posting remains unverified.

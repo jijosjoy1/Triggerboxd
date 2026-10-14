@@ -19,9 +19,10 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   let certifications: string[] = [];
   let runtime: number | null = null;
   let genres: string[] = [];
+  let backdropPath:string|null=null;
   if (movie) {
-    try { ({ certifications, runtime, genres } = await tmdbGateway().getMoviePresentation(movie.tmdbId)); }
+    try { ({ certifications, runtime, genres, backdropPath } = await tmdbGateway().getMoviePresentation(movie.tmdbId)); }
     catch { /* Optional metadata must never block warnings or contributions. */ }
   }
-  return <main id="main" className="wrap mvp-page"><MovieDetail movieId={id} initialMovie={movie} certifications={certifications} runtime={runtime} genres={genres} /></main>;
+  return <main id="main" className="wrap mvp-page"><MovieDetail movieId={id} initialMovie={movie} certifications={certifications} runtime={runtime} genres={genres} backdropPath={backdropPath} /></main>;
 }

@@ -65,7 +65,7 @@ export interface TmdbGatewayOptions {
 
 export interface TmdbGateway {
   getRecentMovies(): Promise<TmdbSearchResult[]>;
-  getMoviePresentation(tmdbId: number): Promise<{ runtime: number | null; genres: string[]; certifications: string[] }>;
+  getMoviePresentation(tmdbId: number): Promise<{ runtime: number | null; genres: string[]; certifications: string[]; backdropPath: string|null }>;
   getIndianCertifications(tmdbId: number): Promise<string[]>;
   searchMovies(input: { query: string; page?: number }): Promise<TmdbSearchPage>;
   getMovieDetails(tmdbId: number): Promise<TmdbMovieDetails>;
@@ -126,7 +126,7 @@ export function createTmdbGateway(options: TmdbGatewayOptions): TmdbGateway {
           if (label && label.length <= 32 && /^[A-Za-z0-9 /+()-]+$/.test(label)) certifications.add(label);
         }
       }
-      return { runtime, genres, certifications: [...certifications].sort() };
+      return { runtime, genres, certifications: [...certifications].sort(), backdropPath: typeof payload.backdrop_path==='string'?validatePosterPath(payload.backdrop_path):null };
     },
     async getIndianCertifications(tmdbId): Promise<string[]> {
       validateTmdbId(tmdbId);

@@ -3,9 +3,15 @@ import { isUuid } from './validation';
 import { CATEGORY_SLUGS, type CategoryRating } from './contracts';
 import type { FamilySummaryResult } from './representation-contracts';
 
-// Deliberately accepts no warning, note, identity or revealed-category payload.
-export const FAMILY_REPORT_COLORS = ['#328763','#849544','#d5a342','#c57443','#ac4949'] as const;
-export const FAMILY_REPORT_ART = ['grandma','silence','phone','fan','remote'] as const;
+export const STORY_REACTIONS = [
+  {color:'#4A986C',asset:'/story/reactions/level-1-grandma.svg'},
+  {color:'#D5B84E',asset:'/story/reactions/level-2-silence.svg'},
+  {color:'#E58B43',asset:'/story/reactions/level-3-phone.svg'},
+  {color:'#D65C4D',asset:'/story/reactions/level-4-fan.svg'},
+  {color:'#8D3438',asset:'/story/reactions/level-5-remote.svg'},
+] as const;
+export const FAMILY_REPORT_COLORS=STORY_REACTIONS.map(reaction=>reaction.color);
+export function storyReaction(level:number|null){return level!==null && Number.isInteger(level) && level>=1 && level<=5?STORY_REACTIONS[level-1]:null;}
 export function storyLevel(summary:FamilySummaryResult['familySummary']|null,personal=false):number|null {
   return summary && (personal && summary.count>0 || !summary.provisional && summary.count>=3) && Number.isInteger(summary.value) && summary.value!>=1 && summary.value!<=5 ? summary.value : null;
 }
@@ -41,82 +47,66 @@ export function wrapStoryText(context: Pick<CanvasRenderingContext2D, 'measureTe
   return lines;
 }
 
-/** Original pen-and-ink objects; no generated images, posters or private data. */
-export function drawFamilyArt(ctx:CanvasRenderingContext2D,level:number|null) {
-  ctx.save();ctx.translate(540,790);ctx.strokeStyle='#222d29';ctx.lineWidth=9;ctx.lineCap='round';ctx.lineJoin='round';
-  const path=(points:number[][])=>{ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();};
-  const circle=(x:number,y:number,r:number)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();};
-  if(level===1){
-    // Grandma, round glasses, an armchair and a cup of tea.
-    circle(0,-105,66);circle(-24,-110,20);circle(25,-110,20);path([[-5,-110],[5,-110]]);
-    ctx.beginPath();ctx.arc(0,-115,73,Math.PI,Math.PI*2);ctx.stroke();circle(59,-169,22);ctx.beginPath();ctx.arc(0,-95,22,0,Math.PI);ctx.stroke();
-    path([[-55,-39],[-85,28],[-75,127],[76,127],[83,28],[52,-39]]);
-    path([[-125,-15],[-146,132],[-92,151],[93,151],[145,131],[128,-16]]);
-    path([[-124,150],[-133,188]]);path([[126,147],[136,188]]);
-    path([[35,13],[35,67],[91,67],[91,13],[35,13]]);circle(108,36,18);
-    path([[44,-4],[39,-19],[45,-31]]);
-  }else if(level===2){
-    // A conversation stopped mid-sentence.
-    path([[-166,-125],[152,-125],[175,-100],[175,81],[139,106],[-79,106],[-131,154],[-113,106],[-166,106],[-189,78],[-189,-99],[-166,-125]]);
-    circle(-78,-10,10);circle(-8,-10,10);circle(62,-10,10);
-  }else if(level===3){
-    // The suddenly fascinating phone.
-    path([[-92,-178],[82,-178],[103,-156],[103,149],[80,173],[-91,173],[-112,149],[-112,-153],[-92,-178]]);
-    path([[-86,-130],[77,-130],[77,115],[-86,115],[-86,-130]]);path([[-35,-151],[29,-151]]);circle(-4,145,9);
-    path([[-60,-50],[55,-50],[55,24],[10,24],[-20,48],[-16,24],[-60,24],[-60,-50]]);
-    circle(-30,-12,3);circle(-3,-12,3);circle(24,-12,3);
-  }else if(level===4){
-    // Three-bladed ceiling fan, drawn as a recognisable ordinary object.
-    circle(0,0,27);
-    for(let i=0;i<3;i++){ctx.save();ctx.rotate(i*Math.PI*2/3);path([[14,-20],[44,-69],[60,-167],[115,-181],[153,-134],[106,-57],[23,15]]);ctx.restore();}
-    circle(0,0,9);path([[-18,177],[16,177]]);
-  }else if(level===5){
-    // A remote with an unhelpful pause button.
-    path([[-70,-180],[77,-180],[103,-155],[87,158],[61,178],[-77,170],[-99,146],[-94,-153],[-70,-180]]);
-    circle(54,-127,17);path([[-61,-76],[54,-76]]);
-    ctx.strokeRect(-56,-29,113,77);path([[-22,-10],[-22,27]]);path([[20,-10],[20,27]]);
-    for(let y=86;y<=128;y+=42){circle(-45,y,7);circle(0,y,7);circle(42,y,7);}
-    path([[127,-43],[151,-57]]);path([[-128,30],[-153,42]]);
-  }else{
-    // Unknown is always a question, never a reassuring character.
-    ctx.font='160px Georgia';ctx.textAlign='center';ctx.fillStyle='#222d29';ctx.fillText('?',0,50);
-    circle(0,-10,133);
-  }
-  ctx.restore();
-}
+export type StoryPresentation={year?:number|null;genres?:string[];reaction?:HTMLImageElement|null;accent?:string;backdrop?:boolean;compactTitle?:boolean};
 
-export function drawStoryCard(canvas: HTMLCanvasElement, title: string, summary: FamilySummaryResult['familySummary'] | null, movieId?:string, warning?:CategoryRating, personal=false, poster?:HTMLImageElement|null) {
+/** Cover a full-width hero without distorting portrait art. Lower edges fade away. */
+export function storyArtworkBounds(width:number,height:number,backdrop=false){
+  const scale=backdrop?Math.max(1080/width,1050/height):1080/width;
+  const w=width*scale,h=height*scale;
+  return {x:(1080-w)/2,y:0,width:w,height:h};
+}
+function fittedText(ctx:CanvasRenderingContext2D,text:string,maxWidth:number,maxLines:number,maxSize:number,minSize:number){
+  let size=maxSize;
+  for(;size>minSize;size-=2){ctx.font=`bold ${size}px Georgia`;if(wrapStoryText(ctx,text,maxWidth,maxLines+1).length<=maxLines)break;}
+  ctx.font=`bold ${size}px Georgia`;
+  return {size,lines:wrapStoryText(ctx,text,maxWidth,maxLines)};
+}
+export function drawStoryCard(canvas:HTMLCanvasElement,title:string,summary:FamilySummaryResult['familySummary']|null,movieId?:string,warning?:CategoryRating,personal=false,artwork?:HTMLImageElement|null,presentation:StoryPresentation={}){
   canvas.width=1080;canvas.height=1920;
   const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Your browser could not create the image. Copy the film link instead.');
-  const level=storyLevel(summary,personal);
-  ctx.fillStyle='#f4eedf';ctx.fillRect(0,0,1080,1920);ctx.fillStyle='#222d29';ctx.textAlign='left';
-  ctx.font='bold 34px sans-serif';ctx.fillText('triggerboxd',90,148);
-  ctx.font='24px monospace';ctx.fillText(warning?'MY MOVIE WARNING REPORT':'THE FAMILY MOVIE REPORT',90,202);
-  ctx.strokeStyle='#222d29';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(90,232);ctx.lineTo(990,232);ctx.stroke();
-  ctx.font='bold 72px Georgia';wrapStoryText(ctx,title,900,3).forEach((line,i)=>ctx.fillText(line,90,333+i*86));
-  if(warning){ctx.font='28px sans-serif';ctx.fillStyle='#222d29';ctx.fillText(storyWarningText(warning),90,586);}
-  if(poster && poster.naturalWidth>0 && poster.naturalHeight>0){
-    const scale=Math.min(400/poster.naturalWidth,400/poster.naturalHeight);
-    const width=poster.naturalWidth*scale,height=poster.naturalHeight*scale;
-    ctx.drawImage(poster,310-width/2,790-height/2,width,height);
-    ctx.save();ctx.translate(200,395);ctx.scale(0.5,0.5);drawFamilyArt(ctx,level);ctx.restore();
-    ctx.font='18px sans-serif';ctx.fillStyle='#222d29';ctx.fillText('Poster via TMDb',90,1020);
-  }else drawFamilyArt(ctx,level);
-  ctx.fillStyle='#222d29';ctx.font='bold 65px sans-serif';ctx.textAlign='center';
-  wrapStoryText(ctx,storyCaption(summary,personal),880,3).forEach((line,i)=>ctx.fillText(line,540,1080+i*80));
-  ctx.font='32px monospace';ctx.fillText('AWKWARDNESS METER',540,1275);
-  for(let i=0;i<5;i++){
-    ctx.fillStyle=level===null?'#d3d0c5':i<level?FAMILY_REPORT_COLORS[i]:'#ded9ca';ctx.fillRect(90+i*184,1314,164,38);
-    ctx.fillStyle='#222d29';ctx.font='32px monospace';ctx.fillText(String(i+1),172+i*184,1393);
+  const level=storyLevel(summary,personal),accent=/^#[0-9a-f]{6}$/i.test(presentation.accent??'')?presentation.accent!:'#D5B875';
+  ctx.fillStyle='#111318';ctx.fillRect(0,0,1080,1920);
+  if(artwork && artwork.naturalWidth>0 && artwork.naturalHeight>0){
+    const bounds=storyArtworkBounds(artwork.naturalWidth,artwork.naturalHeight,presentation.backdrop);
+    ctx.drawImage(artwork,bounds.x,bounds.y,bounds.width,bounds.height);
   }
-  ctx.font='28px sans-serif';
-  const evidence=!summary||summary.value===null||summary.count===0?'Community family opinion: unknown':personal?`My awkwardness vote: ${summary.value}/5`:`${summary.count} viewer votes · ${summary.value}/5${level===null?' · early result':''}`;
-  ctx.fillText(evidence,540,1480);ctx.font='24px sans-serif';ctx.fillText('Subjective family opinion. Not a safety guarantee.',540,1530);
-  ctx.textAlign='left';ctx.strokeStyle='#222d29';ctx.beginPath();ctx.moveTo(90,1590);ctx.lineTo(990,1590);ctx.stroke();
-  ctx.font='bold 30px sans-serif';ctx.fillText('Find detailed trigger warnings at',90,1662);
-  ctx.font='bold 42px sans-serif';ctx.fillText('triggerboxd.com',90,1720);
-  const url=movieId&&isUuid(movieId)?`https://triggerboxd.com/movies/${movieId}/`:'https://triggerboxd.com/';
-  ctx.font='25px monospace';wrapStoryText(ctx,url,900,3).forEach((line,i)=>ctx.fillText(line,90,1780+i*35));
+  const fade=ctx.createLinearGradient(0,0,0,1450);
+  fade.addColorStop(0,'rgba(17,19,24,.55)');fade.addColorStop(.22,'rgba(17,19,24,.3)');fade.addColorStop(.4,'rgba(17,19,24,.35)');fade.addColorStop(.58,'rgba(17,19,24,.86)');fade.addColorStop(.82,'rgba(17,19,24,.98)');fade.addColorStop(1,'#111318');
+  ctx.fillStyle=fade;ctx.fillRect(0,0,1080,1920);
+  const headerShade=ctx.createLinearGradient(0,100,0,430);headerShade.addColorStop(0,'rgba(17,19,24,.65)');headerShade.addColorStop(.55,'rgba(17,19,24,.5)');headerShade.addColorStop(1,'rgba(17,19,24,0)');ctx.fillStyle=headerShade;ctx.fillRect(0,0,1080,430);
+  const glow=ctx.createRadialGradient(540,1160,20,540,1160,660);glow.addColorStop(0,`${accent}24`);glow.addColorStop(1,`${accent}00`);ctx.fillStyle=glow;ctx.fillRect(0,650,1080,1270);
+  // Readable, localized title wash; continuous artwork remains behind it.
+  const wash=ctx.createLinearGradient(0,400,0,825);wash.addColorStop(0,'rgba(17,19,24,0)');wash.addColorStop(.45,'rgba(17,19,24,.44)');wash.addColorStop(1,'rgba(17,19,24,0)');ctx.fillStyle=wash;ctx.fillRect(0,400,1080,425);
+  ctx.fillStyle='#F7EBD5';ctx.textAlign='left';ctx.font='bold 38px Arial';ctx.fillText('triggerboxd',72,262);
+  ctx.textAlign='right';ctx.font='bold 22px Arial';ctx.fillText('SPOILER SAFE',1008,258);
+  ctx.textAlign='left';ctx.font='22px Arial';ctx.fillText('MOVIE WARNING REPORT',72,309);
+  if(presentation.compactTitle){ctx.font='bold 34px Arial';wrapStoryText(ctx,title,936,1).forEach(line=>ctx.fillText(line,72,708));}
+  else {const fitted=fittedText(ctx,title,936,3,102,58);fitted.lines.forEach((line,i)=>ctx.fillText(line,72,512+i*fitted.size*1.08));}
+  ctx.font='26px Arial';ctx.fillStyle='#F7EBD5';const meta=[presentation.year?String(presentation.year):'',...(presentation.genres??[]).slice(0,2)].filter(Boolean).join(' · ');
+  wrapStoryText(ctx,meta,936,1).forEach(line=>ctx.fillText(line,72,753));
+  if(warning){ctx.font='25px Arial';wrapStoryText(ctx,storyWarningText(warning),936,2).forEach((line,i)=>ctx.fillText(line,72,788+i*29));}
+  ctx.fillStyle='#F7EBD5';ctx.textAlign='center';ctx.font='bold 34px Arial';ctx.fillText('WATCH WITH YOUR PARENTS?',540,871);
+  const verdict=fittedText(ctx,storyCaption(summary,personal),936,2,level===null?52:88,level===null?46:72);ctx.fillStyle=level===null?'#B9ADA0':accent;
+  verdict.lines.forEach((line,i)=>ctx.fillText(line,540,973+i*verdict.size*1.04));
+  if(level!==null && presentation.reaction){ctx.drawImage(presentation.reaction,240,1080,600,300);}
+  else if(level===null){ctx.font='72px Georgia';ctx.fillStyle='#B9ADA0';ctx.fillText('?',540,1220);}
+  ctx.font='22px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('AWKWARDNESS METER',540,1398);
+  for(let i=0;i<5;i++){
+    const selected=level===i+1;
+    ctx.save();ctx.fillStyle=selected?STORY_REACTIONS[i].color:'#292C32';ctx.shadowColor=selected?STORY_REACTIONS[i].color:'transparent';ctx.shadowBlur=selected?18:0;
+    ctx.beginPath();ctx.roundRect(72+i*190,1420,176,52,12);ctx.fill();ctx.shadowBlur=0;
+    if(selected){ctx.strokeStyle='#F7EBD5';ctx.lineWidth=2;ctx.stroke();}
+    ctx.font='bold 28px Arial';ctx.fillStyle=selected&&i<3?'#111318':'#F7EBD5';ctx.fillText(String(i+1),160+i*190,1456);ctx.restore();
+  }
+  ctx.fillStyle='#F7EBD5';ctx.font='bold 32px Arial';ctx.fillText(level===null?'—':`${level}/5`,540,1520);
+  ctx.font='24px Arial';ctx.fillStyle='#B9ADA0';const evidence=personal?'MY VERDICT':`COMMUNITY VERDICT${summary&&summary.count>0?` · ${summary.count} viewer votes`:''}`;ctx.fillText(evidence,540,1555);
+  ctx.font='20px Arial';ctx.fillText('Subjective family opinion. Not a safety guarantee.',540,1590);
+  ctx.font='bold 27px Arial';ctx.fillStyle='#F7EBD5';ctx.textAlign='left';ctx.fillText('TRIGGERBOXD',72,1638);
+  ctx.font='22px Arial';ctx.fillText('Know what you’re walking into.',72,1669);ctx.textAlign='right';ctx.font='bold 25px Arial';ctx.fillText('triggerboxd.com',1008,1638);
+  // Direct link retained within safe area; full URL is available for a Link sticker in UI.
+  const url=movieId&&isUuid(movieId)?`triggerboxd.com/movies/${movieId}/`:'triggerboxd.com';
+  ctx.font='18px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText(url,1008,1669);
+  ctx.textAlign='left';ctx.font='18px Arial';ctx.fillText(artwork?'Artwork via TMDb':'Artwork unavailable',72,354);
 }
 
 /** An explicit own-warning share still respects the report's spoiler protection. */
