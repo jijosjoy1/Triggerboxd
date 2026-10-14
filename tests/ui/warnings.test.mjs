@@ -46,6 +46,7 @@ test('protected and unassessed categories have identical default HTML with unive
   const protectedHtml=renderToStaticMarkup(React.createElement(MovieWarnings,structuredClone(props)));
   assert.equal(unassessed,protectedHtml);
   assert.match(unassessed,/Reveal selected category/);
+  assert.doesNotMatch(unassessed,/Check answer|Hide answer/);
   assert.doesNotMatch(unassessed,/additional spoiler-sensitive|hidden categories|No viewer assessments yet/);
 });
 
