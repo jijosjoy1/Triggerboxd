@@ -41,7 +41,7 @@ async function read<T>(response: Response): Promise<T> {
   return body.data as T;
 }
 
-export function UnifiedContribution({ movieId, title, posterPath, backdropPath, year, genres, watched, onChanged }: { movieId: string; title: string; posterPath?: string | null; backdropPath?: string | null; year?: number | null; genres?: string[]; watched: boolean; onChanged: () => void }) {
+export function UnifiedContribution({ movieId, title, posterPath, backdropPath, year, genres, watched, onChanged, onSaved }: { movieId: string; title: string; posterPath?: string | null; backdropPath?: string | null; year?: number | null; genres?: string[]; watched: boolean; onChanged: () => void; onSaved?: () => void }) {
   const { session, loading: authLoading, error: authError } = useAuthSession();
   const owner = session?.user?.id ?? null;
   const ownerRef = useRef<string | null>(null);
@@ -160,6 +160,7 @@ export function UnifiedContribution({ movieId, title, posterPath, backdropPath, 
         vote = result.familyVote; setFamily(vote); setFamilyDraft(null); completed++;
       }
       setMessage('Your ratings are saved. Unrated topics remain unassessed.');
+      onSaved?.();
     } catch (reason) {
       if (requestSequence.current !== scope || ownerRef.current !== owner) return;
       const failure = reason instanceof PartialSaveError ? reason.cause : reason;

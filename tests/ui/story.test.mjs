@@ -49,7 +49,7 @@ test('story card splits the brand in both positions and keeps a long title to tw
   const ctx={createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,save(){},restore(){},beginPath(){},roundRect(){},fill(){},stroke(){},fillRect(){},fillText(text,x,y){printed.push({text,x,y,color:this.fillStyle})},measureText:text=>({width:text.length*18})};
   drawStoryCard({getContext:()=>ctx},'An extraordinarily long film title that needs to fit safely',null);
   assert.equal(printed.filter(item=>item.text==='triggerboxd.com').length,1);
-  assert.ok(printed.some(item=>item.text==='View full warnings at the address above.'));
+  assert.ok(printed.some(item=>item.text==='For full content warnings'));
   const brand=printed.filter(item=>/^(trigger|boxd|TRIGGER|BOXD)$/.test(item.text));
   assert.deepEqual(brand.map(item=>[item.text,item.color]),[['trigger','#FFFFFF'],['boxd','#EF233C']]);
   const title=printed.filter(item=>item.y>=590&&item.y<=710);

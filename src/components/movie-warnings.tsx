@@ -73,6 +73,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   const [retry, setRetry] = useState(0);
   const [activePanel, setActivePanel] = useState<'guide' | 'contribute'>('guide');
   const [contributionOpened, setContributionOpened] = useState(false);
+  const [saveConfirmation, setSaveConfirmation] = useState('');
   const filmList = useFilmList();
   const watched = !!movie && filmList.films.some(item => item.tmdbId === movie.tmdbId);
   useEffect(() => { if (filmList.ready && !watched) setActivePanel('guide'); }, [filmList.ready, watched]);
@@ -91,7 +92,7 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
   function selectPanel(panel:'guide'|'contribute') {
     if (panel==='contribute'&&!watched) return;
     setActivePanel(panel);
-    if (panel==='contribute') setContributionOpened(true);
+    if (panel==='contribute') { setContributionOpened(true); setSaveConfirmation(''); }
     window.history.replaceState(window.history.state,'',`${window.location.pathname}${window.location.search}${panel==='contribute'?'#contribute':'#guide'}`);
   }
 
@@ -128,13 +129,14 @@ export function MovieDetail({ movieId, initialMovie = null, certifications = [],
       <div className="film-tabs" role="tablist" aria-label="Movie sections">{(['guide','contribute'] as const).map(panel=><button key={panel} type="button" id={`tab-${panel}`} role="tab" aria-selected={activePanel===panel} aria-controls={`panel-${panel}`} aria-disabled={panel==='contribute'&&!watched} tabIndex={activePanel===panel?0:-1} onClick={()=>selectPanel(panel)} onKeyDown={event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?'guide':event.key==='End'?'contribute':panel==='guide'?'contribute':'guide';selectPanel(next);document.getElementById(`tab-${next}`)?.focus();}}}>{panel==='guide'?'Guide':'Contribute'}</button>)}</div>
       {!watched ? <p className="film-gate-note">Tick Watched above to add your experience. Saved on this browser.</p> : null}
       <div id="panel-guide" role="tabpanel" aria-labelledby="tab-guide" hidden={activePanel!=='guide'}>
+      {saveConfirmation ? <p className="mvp-notice" role="status">{saveConfirmation}</p> : null}
       <MovieWarnings movieId={movie.id} warnings={movie.warnings} contributorCount={movie.contributorCount} refreshKey={retry} watched={watched} onGuideChanged={refresh} />
       <SynopsisReveal key={`synopsis-${movie.id}`} movieId={movie.id} />
       <MovieScenes readOnly key={`scenes-${movie.id}-${retry}`} movieId={movie.id} onChanged={refresh} />
       <MovieRepresentation readOnly movieId={movie.id} refreshKey={retry} onChanged={refresh} />
       </div>
       <div id="panel-contribute" role="tabpanel" aria-labelledby="tab-contribute" hidden={activePanel!=='contribute'}>{contributionOpened && watched ? <>
-      <UnifiedContribution key={movie.id} movieId={movie.id} title={movie.title} year={movie.year} genres={genres} backdropPath={backdropPath} posterPath={movie.posterPath} watched={watched} onChanged={refresh}/>
+      <UnifiedContribution key={movie.id} movieId={movie.id} title={movie.title} year={movie.year} genres={genres} backdropPath={backdropPath} posterPath={movie.posterPath} watched={watched} onChanged={refresh} onSaved={()=>{ setSaveConfirmation('Your ratings were saved. The Guide shows the updated community warnings; protected details remain hidden.'); selectPanel('guide'); requestAnimationFrame(()=>document.getElementById('tab-guide')?.focus()); }}/>
       <MovieRepresentation movieId={movie.id} watched={watched} onChanged={refresh}/>
       </>:null}</div>
     </> : null}

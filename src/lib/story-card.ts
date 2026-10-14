@@ -79,7 +79,7 @@ export function drawStoryCard(canvas:HTMLCanvasElement,title:string,summary:Fami
   ctx.textAlign='left';ctx.font='bold 38px Arial';ctx.fillStyle='#FFFFFF';ctx.fillText('trigger',72,262);ctx.fillStyle='#EF233C';ctx.fillText('boxd',72+ctx.measureText('trigger').width,262);
   ctx.fillStyle='#F7EBD5';
   ctx.textAlign='right';ctx.font='bold 22px Arial';ctx.fillText('SPOILER SAFE',1008,258);
-  ctx.textAlign='left';ctx.font='22px Arial';ctx.fillText('MOVIE WARNING REPORT',72,309);
+  ctx.textAlign='left';ctx.font='22px Arial';ctx.fillText('CONTENT WARNING',72,309);
   if(presentation.compactTitle){ctx.font='bold 34px Arial';wrapStoryText(ctx,title,936,1).forEach(line=>ctx.fillText(line,72,708));}
   else {const fitted=fittedText(ctx,title,936,2,96,56),start=fitted.lines.length===1?656:603;fitted.lines.forEach((line,i)=>ctx.fillText(line,72,start+i*fitted.size*1.08));}
   ctx.font='26px Arial';ctx.fillStyle='#F7EBD5';const meta=[presentation.year?String(presentation.year):'',...(presentation.genres??[]).slice(0,2)].filter(Boolean).join(' · ');
@@ -106,8 +106,8 @@ export function drawStoryCard(canvas:HTMLCanvasElement,title:string,summary:Fami
   ctx.fillStyle='#F7EBD5';ctx.font='bold 32px Arial';ctx.fillText(level===null?'—':`${level}/5`,540,1520);
   ctx.font='24px Arial';ctx.fillStyle='#B9ADA0';const evidence=personal?'MY VERDICT':`COMMUNITY VERDICT${summary&&summary.count>0?` · ${summary.count} viewer votes`:''}`;ctx.fillText(evidence,540,1555);
   ctx.font='20px Arial';ctx.fillText('Subjective family opinion. Not a safety guarantee.',540,1590);
-  ctx.textAlign='center';ctx.font='bold 32px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('triggerboxd.com',540,1638);
-  ctx.font='22px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText('View full warnings at the address above.',540,1669);
+  ctx.textAlign='center';ctx.font='bold 32px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('For full content warnings',540,1638);
+  ctx.font='22px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText('triggerboxd.com',540,1669);
   ctx.textAlign='left';ctx.font='18px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText(artwork?'Artwork via TMDb':'Artwork unavailable',72,354);
 }
 
