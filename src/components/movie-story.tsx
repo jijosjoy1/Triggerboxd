@@ -5,12 +5,15 @@ import type { FamilySummaryResult } from '../lib/representation-contracts';
 import type {CategoryRating} from '../lib/contracts';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
 import {loadStoryImage,storyImageUrl,storyAccent} from '../lib/story-assets';
+import {loadDefaultStoryRating} from '../lib/story-default';
 import {isUuid} from '../lib/validation';
 
-export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,warning,ownFamilyValue}:{movieId:string;title:string;posterPath?:string|null;backdropPath?:string|null;year?:number|null;genres?:string[];warning?:CategoryRating;ownFamilyValue?:number|null}) {
+export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,warning,ownFamilyValue,defaultOpen=false}:{movieId:string;title:string;posterPath?:string|null;backdropPath?:string|null;year?:number|null;genres?:string[];warning?:CategoryRating;ownFamilyValue?:number|null;defaultOpen?:boolean}) {
   const canvas=useRef<HTMLCanvasElement>(null),generation=useRef(0),imageVersion=useRef(0);
-  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
-  const {session}=useAuthSession();
+  const [open,setOpen]=useState(defaultOpen),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+  const {session,loading:authLoading,error:authError}=useAuthSession();
+  const [defaultLoaded,setDefaultLoaded]=useState(false);
+  const [initialLoading,setInitialLoading]=useState(defaultOpen);
   const [community,setCommunity]=useState<FamilySummaryResult['familySummary']|null>(null);
   const [own,setOwn]=useState<number|null>(ownFamilyValue??null);
   const [source,setSource]=useState<'personal'|'community'>(ownFamilyValue?'personal':'community');
@@ -22,10 +25,21 @@ export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,wa
   const summary=personal?(own?{value:own,count:1,distribution:[],provisional:false}:null):community;
   const level=storyLevel(summary,personal);
   const link=isUuid(movieId)?`https://triggerboxd.com/movies/${movieId}/`:'';
-  useEffect(()=>{generation.current++;imageVersion.current++;setOpen(false);setCommunity(null);setOwn(ownFamilyValue??null);setSource(ownFamilyValue?'personal':'community');setArtMode('poster');setCompactTitle(false);setBusy(false);setFile(null);setMessage('');return()=>{generation.current++;imageVersion.current++;};},[movieId,title,session?.user?.id]);
+  useEffect(()=>{generation.current++;imageVersion.current++;setOpen(defaultOpen);setInitialLoading(defaultOpen);setDefaultLoaded(false);setCommunity(null);setOwn(ownFamilyValue??null);setSource(ownFamilyValue?'personal':'community');setArtMode('poster');setCompactTitle(false);setBusy(false);setFile(null);setMessage('');return()=>{generation.current++;imageVersion.current++;};},[movieId,title,session?.user?.id]);
   useEffect(()=>{setOwn(ownFamilyValue??null);},[ownFamilyValue]);
   useEffect(()=>{
-    if(!open || !canvas.current)return;
+    if(!open||authLoading)return;
+    if(authError||!session){setMessage(authError??'Could not check sign-in.');setInitialLoading(false);return;}
+    const version=++generation.current;imageVersion.current++;setFile(null);setInitialLoading(true);
+    if(ownFamilyValue && ownFamilyValue>=1 && ownFamilyValue<=5){setOwn(ownFamilyValue);setSource('personal');setDefaultLoaded(true);setInitialLoading(false);return;}
+    void loadDefaultStoryRating(movieId,session).then(result=>{
+      if(version===generation.current){setOwn(result.own);setCommunity(result.community);setSource(result.source);setDefaultLoaded(true);}
+    }).catch(e=>{if(version===generation.current)setMessage(e instanceof Error?e.message:'Could not load ratings.');})
+      .finally(()=>{if(version===generation.current)setInitialLoading(false);});
+    return()=>{generation.current++;};
+  },[open,authLoading,authError,session?.user?.id,movieId]);
+  useEffect(()=>{
+    if(!open || initialLoading || !canvas.current)return;
     const version=++imageVersion.current;setFile(null);
     const target=canvas.current;
     async function prepare(){
@@ -43,7 +57,7 @@ export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,wa
       }catch(e){if(version===imageVersion.current)setMessage(e instanceof Error?e.message:'Image unavailable.');}
     }
     void prepare();return()=>{imageVersion.current++;};
-  },[open,title,posterPath,backdropPath,year,genres,artMode,compactTitle,source,community,own,movieId,warning,renderRevision]);
+  },[open,title,posterPath,backdropPath,year,genres,artMode,compactTitle,source,community,own,movieId,warning,renderRevision,initialLoading]);
   async function selectRating(next:'personal'|'community'){
     const version=++generation.current;imageVersion.current++;setFile(null);setSource(next);setBusy(true);setMessage('');setRenderRevision(value=>value+1);
     try{
@@ -62,7 +76,7 @@ export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,wa
     setMessage('PNG saved. In Instagram, create a Story and choose this image.');
   }
   async function share(){
-    if(!file || busy)return;
+    if(!file || busy || initialLoading)return;
     const version=generation.current;
     if(!navigator.share || !navigator.canShare?.({files:[file]})){download();setMessage('This browser cannot share image files directly. Save the PNG, then choose it in Instagram Stories.');return;}
     setBusy(true);setMessage('');
@@ -74,15 +88,16 @@ export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,wa
     finally{if(version===generation.current)setBusy(false);}
   }
   async function copy(){try{await navigator.clipboard.writeText(link);setMessage('Movie link copied. Paste it into an Instagram Link sticker.');}catch{setMessage('Copy the movie link from the field below for your Link sticker.');}}
-  return <section className="mvp-story"><button type="button" className="mvp-secondary" aria-expanded={open} onClick={()=>{generation.current++;imageVersion.current++;setBusy(false);setFile(null);setMessage('');setOpen(!open);}}>{warning?'Share my warning as a Story':'Make an awkwardness Story card'}</button>{open?<div className="mvp-story-panel">
+  return <section className="mvp-story">{!defaultOpen?<button type="button" className="mvp-secondary" aria-expanded={open} onClick={()=>{generation.current++;imageVersion.current++;setBusy(false);setFile(null);setMessage('');setOpen(!open);}}>{warning?'Share my warning as a Story':'Share Story card'}</button>:null}{open?<div className="mvp-story-panel">
     <p className="fine">{warning?'Your saved warning, with spoiler protection preserved.':'A cinematic family movie report. Choose whose rating to share.'}</p>
     <canvas ref={canvas} className="mvp-story-preview" role="img" aria-label={`${title}. ${personal?'My':'Community'} awkwardness report. ${level??'Unknown'} of 5. ${storyCaption(summary,personal)} ${warning?'Includes my saved warning.':''}`}/>
-    <div className="story-rating-source" role="group" aria-label="Rating source"><button type="button" className="mvp-secondary" aria-pressed={personal} disabled={busy} onClick={()=>void selectRating('personal')}>My rating</button><button type="button" className="mvp-secondary" aria-pressed={!personal} disabled={busy} onClick={()=>void selectRating('community')}>Community rating</button></div>
+    {defaultLoaded&&!initialLoading&&source==='community'&&!own?<p className="fine">No personal family-awkwardness vote is saved. Content warnings are separate; this card uses the available community family opinion.</p>:null}
+    <div className="story-rating-source" role="group" aria-label="Rating source"><button type="button" className="mvp-secondary" aria-pressed={personal} disabled={busy||initialLoading} onClick={()=>void selectRating('personal')}>My rating</button><button type="button" className="mvp-secondary" aria-pressed={!personal} disabled={busy||initialLoading} onClick={()=>void selectRating('community')}>Community rating</button></div>
     {posterPath&&backdropPath?<label className="story-art-choice">Artwork<select value={artMode} onChange={e=>{imageVersion.current++;setFile(null);setMessage('');setArtMode(e.target.value as 'poster'|'backdrop');}}><option value="poster">Movie poster</option><option value="backdrop">Movie backdrop</option></select></label>:null}
     <label className="story-title-choice"><input type="checkbox" checked={compactTitle} onChange={e=>{imageVersion.current++;setFile(null);setCompactTitle(e.target.checked);}}/>Artwork already includes the title · use a compact heading</label>
-    {!file?<p className="fine" role="status">Preparing your card…</p>:null}
-    <button type="button" className="button" disabled={busy||!file} onClick={()=>void share()}>Share Story card</button>
-    <button type="button" className="mvp-secondary" disabled={busy||!file} onClick={download}>Save PNG</button>
+    {!file?<p className="fine" role="status">{initialLoading?'Loading your saved rating…':'Preparing your card…'}</p>:null}
+    <button type="button" className="button" disabled={busy||initialLoading||!file} onClick={()=>void share()}>Share Story card</button>
+    <button type="button" className="mvp-secondary" disabled={busy||initialLoading||!file} onClick={download}>Save PNG</button>
     <p className="fine">Choose Instagram in your phone’s share menu. If it isn’t listed, save the PNG and add it to your Story.</p>
     <button type="button" className="mvp-secondary" onClick={()=>void copy()}>Copy movie link for Story sticker</button>
     <label className="story-link">Movie link<input type="text" readOnly value={link} onFocus={e=>e.currentTarget.select()}/></label>

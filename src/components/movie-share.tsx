@@ -126,7 +126,8 @@ export function MovieShare({ movieId, title, posterPath, year, genres, backdropP
     <dialog ref={dialog} className="mvp-share" aria-labelledby={titleId} onClick={event => { if (event.target === dialog.current) close(); }} onCancel={close}>
       <div className="mvp-share-panel">
         <h2 id={titleId}>Share this film</h2>
-        <p className="fine">The link buttons share only the film title and URL. Story cards below include the report you choose.</p>
+        {open ? <MovieStory defaultOpen movieId={movieId} title={shareTitle} posterPath={posterPath} year={year} genres={genres} backdropPath={backdropPath} /> : null}
+        <p className="fine">Other sharing options send only the film title and link.</p>
         <div className="mvp-share-actions">
           {nativeShare ? <button type="button" className="mvp-secondary" disabled={busy} onClick={() => void share()}>{busy ? 'Sharing…' : 'Share via device'}</button> : null}
           <button type="button" className="button mvp-share-primary" disabled={busy} onClick={() => void copyLink()}>{busy ? 'Copying…' : 'Copy link'}</button>
@@ -136,7 +137,6 @@ export function MovieShare({ movieId, title, posterPath, year, genres, backdropP
           <li><a href={redditShareUrl(url, shareTitle)} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span>Share on Reddit</a></li>
         </ul>
         <label className="mvp-share-field">Film link<input className="mvp-share-url" type="text" value={url} readOnly spellCheck={false} aria-label="Canonical film link" onFocus={event => event.currentTarget.select()} /></label>
-        {open ? <MovieStory movieId={movieId} title={shareTitle} posterPath={posterPath} year={year} genres={genres} backdropPath={backdropPath} /> : null}
         <div className="mvp-share-feedback" role="status" aria-live="polite" data-visible={outcome?.state === 'success' ? 'true' : 'false'}>{outcome?.state === 'success' ? outcome.text : ''}</div>
         <div className="mvp-share-feedback mvp-share-error" role="alert" aria-live="assertive" data-visible={outcome?.state === 'error' ? 'true' : 'false'}>{outcome?.state === 'error' ? outcome.text : ''}</div>
         <button type="button" className="mvp-share-close" onClick={close}>Close</button>

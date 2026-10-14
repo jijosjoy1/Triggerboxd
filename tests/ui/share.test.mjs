@@ -85,3 +85,11 @@ test('share styles never exceed a 320px viewport width', () => {
   assert.match(css, /@media\(max-width:650px\)\{[^@]*\.mvp-share\{[^}]*bottom:0[^}]*width:100%[^}]*max-width:100%[^}]*max-height:calc\(100dvh - 24px\)/);
   assert.match(css, /@media\(max-width:650px\)\{[^@]*\.mvp-share-panel\{[^}]*border-radius:16px 16px 0 0/);
 });
+
+test('default Story preview has no separate make-card action and waits for saved rating',()=>{
+ const {MovieStory}=loadTypeScript(fileURLToPath(new URL('../../src/components/movie-story.tsx',import.meta.url)));
+ const html=renderToStaticMarkup(React.createElement(MovieStory,{movieId:ID,title:'Khalifa',defaultOpen:true}));
+ assert.match(html,/<canvas/);assert.match(html,/Loading your saved rating/);
+ assert.doesNotMatch(html,/Make an awkwardness|aria-expanded/);
+ assert.match(html,/Share Story card/);
+});
