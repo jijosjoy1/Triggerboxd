@@ -136,3 +136,17 @@ test("aborted upstream requests become timeout errors", async () => {
   });
   await assert.rejects(gateway.searchMovies({ query: "film" }), (error) => error instanceof TmdbError && error.code === "UPSTREAM_TIMEOUT");
 });
+
+test('recent releases use bounded Indian discovery and discard future, adult and invalid artwork records',async()=>{
+  let url;
+  const base={id:1,title:'Recent',original_title:'Recent',adult:false,release_date:'2026-10-01',original_language:'ml',poster_path:'/poster.jpg'};
+  const gateway=createTmdbGateway({accessToken:'token',now:()=>Date.UTC(2026,9,14),fetchImpl:async input=>{url=new URL(input);return Response.json({results:[base,base,{...base,id:2,adult:true},{...base,id:3,release_date:'2027-01-01'},{...base,id:4,release_date:'2020-01-01'},{...base,id:5,poster_path:'//evil.example/img'}]});}});
+  const films=await gateway.getRecentMovies();
+  assert.equal(url.pathname,'/3/discover/movie');
+  assert.equal(url.searchParams.get('with_origin_country'),'IN');
+  assert.equal(url.searchParams.get('primary_release_date.lte'),'2026-10-14');
+  assert.equal(url.searchParams.get('include_adult'),'false');
+  assert.equal(films.length,1);
+  assert.equal(films[0].tmdbId,1);
+  assert.equal('overview' in films[0],false);
+});

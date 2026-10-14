@@ -64,6 +64,7 @@ export interface TmdbGatewayOptions {
 }
 
 export interface TmdbGateway {
+  getRecentMovies(): Promise<TmdbSearchResult[]>;
   getMoviePresentation(tmdbId: number): Promise<{ runtime: number | null; genres: string[]; certifications: string[] }>;
   getIndianCertifications(tmdbId: number): Promise<string[]>;
   searchMovies(input: { query: string; page?: number }): Promise<TmdbSearchPage>;
@@ -85,6 +86,28 @@ export function createTmdbGateway(options: TmdbGatewayOptions): TmdbGateway {
   const cache = new Map<string, CacheEntry>();
 
   return {
+    async getRecentMovies() {
+      const end = new Date(now());
+      const start = new Date(end.getTime() - 120 * 24 * 60 * 60 * 1000);
+      const from = start.toISOString().slice(0,10), to = end.toISOString().slice(0,10);
+      const url = new URL('/3/discover/movie', API_ORIGIN);
+      url.searchParams.set('with_origin_country','IN');
+      url.searchParams.set('primary_release_date.gte',from);
+      url.searchParams.set('primary_release_date.lte',to);
+      url.searchParams.set('sort_by','popularity.desc');
+      url.searchParams.set('include_adult','false');
+      url.searchParams.set('include_video','false');
+      url.searchParams.set('page','1');
+      const payload = await requestJson(url,accessToken,fetchImpl,timeoutMs);
+      if(!isRecord(payload) || !Array.isArray(payload.results))throw new TmdbError('UPSTREAM_ERROR');
+      const seen = new Set<number>();
+      return payload.results.flatMap(value=>{
+        if(!isRecord(value) || value.adult!==false || typeof value.release_date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.release_date) || value.release_date<from || value.release_date>to)return [];
+        const movie=parseSearchResult(value);
+        if(!movie || !movie.posterPath || seen.has(movie.tmdbId))return [];
+        seen.add(movie.tmdbId); return [movie];
+      }).slice(0,8);
+    },
     async getMoviePresentation(tmdbId) {
       validateTmdbId(tmdbId);
       const url = new URL(`/3/movie/${tmdbId}`, API_ORIGIN);
