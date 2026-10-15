@@ -8,6 +8,8 @@ begin;
 create role triggerboxd_admin_reader nologin noinherit nobypassrls;
 grant triggerboxd_admin_reader to postgres;
 grant usage on schema private, public to triggerboxd_admin_reader;
+-- PostgreSQL requires CREATE while transferring function ownership; revoked below.
+grant create on schema private to triggerboxd_admin_reader;
 
 -- The owner allowlist. Provisioned by an operator using the migration role;
 -- never readable or writable by anon, authenticated or service_role, and not

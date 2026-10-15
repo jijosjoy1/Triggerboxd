@@ -2,6 +2,8 @@
 -- private outbox, then delivered asynchronously so a mail outage can never block
 -- account creation or a film import. No existing object is altered.
 begin;
+-- Required for ownership transfers only; never retained by the runtime role.
+grant create on schema private to triggerboxd_writer;
 
 create table private.notification_outbox (
   id uuid primary key default gen_random_uuid(),
@@ -227,4 +229,5 @@ and coalesce(end_time, start_time) < now() - interval '7 days';$job$;
 end if;
 end
 $migration$;
+revoke create on schema private from triggerboxd_writer;
 commit;
