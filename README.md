@@ -55,6 +55,28 @@ Environment names:
 - ENABLE_GOOGLE_AUTH: enabled unless explicitly false, after provider configuration.
 - ENABLE_PASSWORD_AUTH: explicit true only after mail setup.
 
+## Owner dashboard and notifications (owner-only)
+
+The private owner dashboard lives at `/admin/` (noindex, disallowed in robots.txt, absent from the sitemap). Authorisation is stored in `private.admin_owners` and enforced inside the database function, so no route, link, nickname or client value grants access. Provision the owner with the migration role only:
+
+```sql
+insert into private.admin_owners(user_id, note) values ('<owner-auth-user-uuid>', 'owner');
+```
+
+Owner notifications are captured from row changes into `private.notification_outbox` and delivered asynchronously, so a mail outage never blocks account creation or a film import. Events are raised for every new `auth.users` row (including accounts created by the provider outside this website) and for each first `public.movies` row; existing rows are never backfilled. The unique `event_key` makes duplicate events impossible, retries use bounded exponential backoff, and finished events are pruned after 30 days by the hourly pg_cron job.
+
+Required configuration (all server-side; none are `NEXT_PUBLIC`):
+
+- `INTERNAL_DISPATCH_SECRET`: random value of at least 32 characters, stored as a Worker secret. The dispatcher returns 404 without its matching internal header.
+- `EMAIL_API_KEY`: a Resend sending-only key restricted to the verified sending domain.
+- `EMAIL_FROM`: an address on that verified sending domain. Domain verification must complete before enabling delivery.
+
+The recipient is fixed to `info@triggerboxd.com`; browser input and environment overrides cannot redirect notifications. The sender uses only `https://api.resend.com/emails`, with a five-second request timeout and a small bounded batch.
+
+`worker.mjs` preserves the generated OpenNext fetch handler and invokes `POST /api/v1/internal/notifications/dispatch/` every five minutes through the same Worker request context. Wrangler owns this schedule; no external scheduler or email automation subscription is needed. If sending credentials are missing, the schedule skips before claiming events. A successful provider acceptance does not prove inbox delivery.
+
+The private outbox leases due events atomically and requires the lease token to acknowledge delivery. Retries are bounded. Resend idempotency reduces duplicate sends, but cannot guarantee exactly-once inbox delivery indefinitely. Monitor failed events and the aggregate dispatch logs; logs must never contain notification bodies or account identifiers. Email is not operational until the provider account, domain, sender and secret configuration have been verified.
+
 ## Contribution and privacy rules
 
 Six categories; Unknown is absent/null, never inferred None. One editable rating per user/movie/category. Upper median, provisional under three category assessments, visible distributions and the documented disagreement threshold. No scraped/generated warning seeds. TMDb is metadata only.
@@ -65,10 +87,10 @@ Real contribution drafts use tab sessionStorage, expire after 30 minutes and are
 
 ## Owner operation / release gates
 
-No public admin API. Use the restricted operator procedure in supabase/README.md for removal/suspension/restoration; verify the actor, use the documented lock/transaction and record a minimal private action. Contact/deletion support uses info@triggerboxd.com. Revoke provider sessions, delete the verified user's account through the authorized admin procedure, and verify ratings/profile removal and audit-reference redaction in a disposable rehearsal first.
+The owner overview API is protected by database owner authorization. Use the restricted operator procedure in supabase/README.md for removal/suspension/restoration; verify the actor, use the documented lock/transaction and record a minimal private action. Contact/deletion support uses info@triggerboxd.com. Revoke provider sessions, delete the verified user's account through the authorized admin procedure, and verify ratings/profile removal and audit-reference redaction in a disposable rehearsal first.
 
 The pg_cron migration schedules `public.expire_request_state()` hourly when pg_cron is available; only the service role and database owner can invoke it. Request quota records expire after 48 hours and idempotency records after 24 hours. Physical deletion normally follows at the next successful hourly run, so monitor the job after deployment. The Triggerboxd cleanup job also removes only its own job-run history older than seven days. Set retention/redaction for restricted support logs and prove backup/restore before accepting public contributions.
 
 Marketing/demo/auth/search indexing differs: demo/auth/search are noindex. Movie pages become indexable at three eligible distinct contributors; hidden/empty/under-threshold pages are excluded. The initial sitemap lists up to 500 eligible movie guides; extend pagination before that limit is reached. Original Open Graph art is retained.
 
-The repository Worker name triggerboxd-preview differs from the earlier live Worker lingering-king-c5c0. Reconcile the actual account/Worker/routes before any deployment. Keep the prior static deployment for rollback. Staging and production deployment each remain separate user-authorized actions.
+The production Worker is `lingering-king-c5c0`, serving `triggerboxd.com`. Build with OpenNext before deploying the custom `worker.mjs` entrypoint. Keep the previous Worker version available for rollback.

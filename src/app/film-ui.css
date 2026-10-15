@@ -59,3 +59,19 @@
 .mvp-page .mvp-distribution dt{overflow-wrap:anywhere}
 .mvp-page .severity-very-severe{color:#ffd0be;background:#512d2b}
 .mvp-page .severity-extreme{color:#ffd8e3;background:#5b2638}
+
+/* Owner dashboard. Read-only, responsive, keyboard reachable, no fixed widths. */
+.adm{display:grid;gap:26px;min-width:0}
+.adm h2{font-size:22px;margin:0 0 10px}
+.adm-status{color:var(--film-muted);font-size:14px}
+.adm-empty{color:var(--film-muted)}
+.adm-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0}
+.adm-tile{margin:0;padding:14px 16px;border:1px solid var(--film-line);border-radius:8px;background:var(--film-surface);min-width:0}
+.adm-tile dt{font-size:12px;color:var(--film-muted)}
+.adm-tile dd{margin:6px 0 0;font-size:26px;font-weight:700;letter-spacing:-.5px}
+.adm-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.adm-list>li{display:grid;gap:3px;min-width:0;padding:12px 14px;border:1px solid var(--film-line);border-radius:8px;background:#1b1f26}
+.adm-primary{font-weight:600;overflow-wrap:anywhere}
+.adm-ratings{font-size:12px;color:var(--film-muted);overflow-wrap:anywhere}
+.adm-pager{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:400px){.adm-tiles{grid-template-columns:1fr}.adm-tile dd{font-size:22px}.adm h2{font-size:20px}}
