@@ -19,6 +19,14 @@ export async function GET(request: Request) {
     if (error) throw error;
     const destination = new URL(recovery ? '/auth/reset-password/' : next, requestOrigin(request));
     if (recovery) destination.searchParams.set('next', next);
+    else {
+      const { data: account, error: profileError } = await scoped.client.rpc('get_my_account_status');
+      if (profileError || !account) throw new Error('Profile unavailable');
+      if (account.nicknameChosen !== true) {
+        destination.pathname = '/account/'; destination.search = ''; destination.hash = '';
+        destination.searchParams.set('setup', 'nickname'); destination.searchParams.set('next', next);
+      }
+    }
     const response = NextResponse.redirect(destination, 303);
     issueCsrf(request, response, true);
     response.headers.set('Referrer-Policy', 'no-referrer');

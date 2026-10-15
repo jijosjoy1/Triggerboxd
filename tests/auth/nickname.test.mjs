@@ -13,7 +13,7 @@ test('nickname accepts a chosen public alias without storing contact details', (
   }
 });
 
-test('session returns only account ID and chosen nickname, never provider email or metadata', async () => {
+test('session returns only safe profile fields and nickname setup state, never provider identity', async () => {
   const server = load('src/lib/supabase/server.ts');
   const { GET } = load('src/app/api/auth/session/route.ts');
   const savedConfig = server.authConfiguration, savedClient = server.createRequestClient;
@@ -29,7 +29,7 @@ test('session returns only account ID and chosen nickname, never provider email 
     const response = await GET(new Request('https://triggerboxd.com/api/auth/session/'));
     const body = await response.json();
     assert.equal(response.status, 200);
-    assert.deepEqual(body.data.user, { id: 'actor', nickname: 'Cinema Fan' });
+    assert.deepEqual(body.data.user, { id: 'actor', nickname: 'Cinema Fan', needsNickname: true });
     assert.doesNotMatch(JSON.stringify(body), /private@example.com|Real Name/);
   } finally { server.authConfiguration = savedConfig; server.createRequestClient = savedClient; }
 });
@@ -69,6 +69,6 @@ test('nickname mutation requires verified CSRF, validates input and updates only
     const response = await POST(request('  Cinema Fan  '));
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).data, { nickname: 'Cinema Fan' });
-    assert.deepEqual(calls, [['from', 'profiles'], ['update', { display_name: 'Cinema Fan' }], ['eq', 'user_id', 'verified-user']]);
+    assert.deepEqual(calls, [['from', 'profiles'], ['update', { display_name: 'Cinema Fan', nickname_set: true }], ['eq', 'user_id', 'verified-user']]);
   } finally { server.createRequestClient = savedClient; }
 });

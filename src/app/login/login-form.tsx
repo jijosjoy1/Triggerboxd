@@ -57,11 +57,12 @@ export default function LoginForm({ next, linkError }: { next: string; linkError
     {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
     {session?.user ? <div>
       <p>You’re signed in as {session.user.nickname}.</p>
-      <p><Link className="button" href={next}>Continue to your film</Link></p>
+      <p><Link className="button" href={session.user.needsNickname ? `/account/?setup=nickname&next=${encodeURIComponent(next)}` : next}>{session.user.needsNickname ? 'Choose nickname to continue' : 'Continue to your film'}</Link></p>
       <p><Link href="/account/">Edit nickname</Link></p>
       <button className={styles.tab} disabled={busy} onClick={logout}>Sign out</button>
     </div> : <>
       <button className={`button ${styles.full}`} disabled={disabled || session?.googleEnabled === false} onClick={google}>{busy ? 'Please wait…' : 'Continue with Google'}</button>
+      <p className={styles.fine}>New here? Choose a nickname after Google sign-in. We won’t use your Google name as your nickname. Profile pictures are optional.</p>
       {session?.passwordEnabled ? <>
         <div className={styles.tabs} aria-label="Email sign-in options">
           {(['login', 'signup', 'recovery'] as Mode[]).map(value => <button key={value} type="button" className={styles.tab} disabled={busy} aria-pressed={mode === value} onClick={() => { setMode(value); setError(null); setNotice(null); }}>{value === 'login' ? 'Email sign-in' : value === 'signup' ? 'Create account' : 'Forgot password'}</button>)}

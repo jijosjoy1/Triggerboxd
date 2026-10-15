@@ -14,6 +14,13 @@ select nickname_test.assert('provider display name is never copied into new prof
   (select display_name='Viewer' from public.profiles where user_id='c0000000-0000-4000-8000-000000000001'));
 select nickname_test.assert('explicitly chosen signup nickname is retained',
   (select display_name='Cinema Fan' from public.profiles where user_id='c0000000-0000-4000-8000-000000000002'));
+select nickname_test.assert('Google fallback needs a chosen nickname',
+  (select not nickname_set from public.profiles where user_id='c0000000-0000-4000-8000-000000000001'));
+select nickname_test.assert('email signup choice does not prompt again',
+  (select nickname_set from public.profiles where user_id='c0000000-0000-4000-8000-000000000002'));
+insert into auth.users(id,email_confirmed_at,raw_user_meta_data) values('c0000000-0000-4000-8000-000000000003',now(),'{"nickname":"Provider nickname"}');
+select nickname_test.assert('provider nickname without explicit choice never breaks signup or skips setup',
+ (select not nickname_set and display_name='Viewer' from public.profiles where user_id='c0000000-0000-4000-8000-000000000003'));
 select nickname_test.assert('existing profile value survives migration',
   (select display_name='Viewer' from public.profiles where user_id='00000000-0000-4000-8000-000000000099'));
 select nickname_test.assert('authenticated may update only nickname column',

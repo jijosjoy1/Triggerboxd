@@ -21,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
     applyCookies = scoped.applyCookies;
     const user = await requireUser(scoped.client);
     const { data, error } = await scoped.client.from('profiles')
-      .update({ display_name: nickname })
+      .update({ display_name: nickname, nickname_set: true })
       .eq('user_id', user.id)
       .select('display_name').single();
     if (error || !data) throw new AuthError(503, 'SERVICE_UNAVAILABLE');

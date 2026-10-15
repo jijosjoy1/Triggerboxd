@@ -5,6 +5,7 @@ import { adminHasMore } from '../lib/admin';
 import { useAuthSession } from '../lib/supabase/browser';
 import { AdminReviewDetails } from './admin-review-details';
 import { AdminFlaggedReviews } from './admin-flagged-reviews';
+import { formatIstTime } from '../lib/ist-time';
 
 type Rating = { category: string; severity: number };
 type Assessment = { id: string; movieId: string; filmTitle: string; submittedAt: string; updatedAt: string; edited: boolean; categoryCount: number; categories: Rating[] };
@@ -22,8 +23,7 @@ export const SEVERITY_WORDS = ['None', 'Mild', 'Moderate', 'Severe', 'Very sever
 const PAGE_SIZE = 5;
 
 function shortDate(value: string): string {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.valueOf()) ? 'Unknown time' : parsed.toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+  return formatIstTime(value);
 }
 
 function categoryName(slug: string): string {

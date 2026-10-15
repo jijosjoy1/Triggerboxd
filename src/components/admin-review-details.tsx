@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { REVIEW_FLAG_REASONS, type AdminReview, type ReviewFlagReason } from '../lib/admin-review';
 import { refreshAuthSession } from '../lib/supabase/browser';
+import { formatIstTime } from '../lib/ist-time';
 
 const SEVERITIES = ['None', 'Mild', 'Moderate', 'Severe', 'Very severe', 'Extreme'];
 export function reviewCategoryName(category: string) {
@@ -61,7 +62,7 @@ export function AdminReviewDetails({ reviewId, accountId, onClose, onChanged }: 
     {review && !loading ? <>
       <p><a href={`/movies/${review.movieId}/`}>{review.filmTitle} — open film guide</a></p>
       <p className="fine">Nickname: {review.nickname} · {review.watched ? 'Marked watched' : 'Not marked watched'} · {review.visibility}</p>
-      <p className="fine">Submitted {new Date(review.submittedAt).toLocaleString()} · Last updated {new Date(review.updatedAt).toLocaleString()}</p>
+      <p className="fine">Submitted {formatIstTime(review.submittedAt)} · Last updated {formatIstTime(review.updatedAt)}</p>
       <p className="fine">All submitted category ratings are shown below. Missing categories were not assessed.</p>
       <div className="adm-review-table-wrap"><table className="adm-review-table"><caption>Full category ratings</caption><thead><tr><th scope="col">Category</th><th scope="col">Rating</th></tr></thead><tbody>
         {review.categories.map(rating => <tr key={rating.category}><th scope="row">{reviewCategoryName(rating.category)}</th><td>{SEVERITIES[rating.severity] ?? 'Unknown'} ({rating.severity}/5){rating.spoilerLevel > 0 ? <span className="fine"> · Spoiler-protected in public views</span> : null}</td></tr>)}

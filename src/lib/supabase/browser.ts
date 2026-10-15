@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 export type AuthSession = {
-  user: { id: string; nickname: string } | null;
+  user: { id: string; nickname: string; needsNickname?: boolean } | null;
   csrfToken: string;
   passwordEnabled: boolean;
   configured: boolean;

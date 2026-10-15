@@ -36,27 +36,27 @@ function RepresentationContent({movieId,onChanged,signedIn,watched=false,readOnl
 
 }
 
-export function FamilySummaryCheck(props:Props){const {session}=useAuthSession();return <FamilyCheck key={`${props.movieId}:${session?.user?.id??'anonymous'}:${props.refreshKey??0}`} movieId={props.movieId}/>;}
+export function FamilySummaryCheck(props:Props){return <FamilyCheck key={`${props.movieId}:${props.refreshKey??0}`} movieId={props.movieId}/>;}
 
 function FamilyCheck({movieId}:{movieId:string}) {
 
- const [data,setData]=useState<FamilySummaryResult|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const [data,setData]=useState<FamilySummaryResult|null>(null),[busy,setBusy]=useState(true),[message,setMessage]=useState(''),[retry,setRetry]=useState(0);
+ useEffect(()=>{
+  const controller=new AbortController();setData(null);setBusy(true);setMessage('');
+  void fetch(`/api/v1/movies/${movieId}/family-summary`,{cache:'no-store',signal:controller.signal}).then(async response=>{
+   const result=await response.json();if(!response.ok||!result.data)throw new Error(result.error?.message??'Could not load family opinion.');
+   if(!controller.signal.aborted)setData(result.data);
+  }).catch(error=>{if(!controller.signal.aborted)setMessage(error instanceof Error?error.message:'Could not load family opinion.');})
+   .finally(()=>{if(!controller.signal.aborted)setBusy(false);});
+  return()=>controller.abort();
+ },[movieId,retry]);
+ return <div className="mvp-family-summary">{busy?<p className="fine" role="status">Loading family opinion…</p>:message?<p role="status">Family opinion unavailable. <button type="button" className="mvp-secondary" onClick={()=>setRetry(value=>value+1)}>Retry family opinion</button></p>:data?<FamilyOpinionDisplay summary={data.familySummary}/>:null}</div>;
+}
 
- const alive=useRef(true);
-
- useEffect(()=>{alive.current=true;return ()=>{alive.current=false;};},[]);
-
- async function check(){setBusy(true);setMessage('');try{const result=await request<FamilySummaryResult>(`/api/v1/movies/${movieId}/family-summary`,'POST',{check:true});if(alive.current)setData(result);}catch(e){if(alive.current)setMessage(e instanceof Error?e.message:'Could not check opinion.');}finally{if(alive.current)setBusy(false);}}
-
- return <div className="mvp-family-summary"><button type="button" className="mvp-secondary" disabled={busy} onClick={()=>{if(data){setData(null);setMessage('');}else void check();}}>{busy?'Checking…':data?'Hide family opinion':'Check family opinion'}</button>{!data ? <p className="fine">⚪ Not yet rated / not shown</p> : null}{data?<>
-
- <p>{familyAwkwardness(data.familySummary.value) ? <><span aria-hidden="true">{familyAwkwardness(data.familySummary.value)?.emoji} </span>{familyAwkwardness(data.familySummary.value)?.verdict} <span className="fine">{familyAwkwardness(data.familySummary.value)?.description}</span></> : '⚪ Not yet rated'}</p>
-
- <p className="fine">Subjective viewer opinions, not a suitability guarantee.</p>
-
- {data.familySummary.count>0?<details><summary>{data.familySummary.count} {data.familySummary.count===1?'vote':'votes'}{data.familySummary.provisional?' · Early result':''}</summary><ul>{data.familySummary.distribution.map((n,i)=><li key={i}>{i+1}/5 · {n} votes</li>)}</ul></details>:null}
-
- </>:null}{message?<p role="status">{message}</p>:null}</div>;
-
+export function FamilyOpinionDisplay({summary}:{summary:FamilySummaryResult['familySummary']}){
+ const verdict=familyAwkwardness(summary.value);
+ return <><p>{verdict?<><span aria-hidden="true">{verdict.emoji} </span><strong>{verdict.verdict}</strong> <span>{summary.value}/5</span><span className="fine"> · {verdict.description}</span></>: '⚪ Not yet rated. No family opinions submitted yet.'}</p>
+  <p className="fine">Subjective viewer opinions, not a suitability guarantee.</p>
+  {summary.count>0?<details><summary>{summary.count} {summary.count===1?'vote':'votes'}{summary.provisional?' · Early result':''}</summary><ul>{summary.distribution.map((count,index)=><li key={index}>{index+1}/5 · {count} votes</li>)}</ul></details>:null}</>;
 }
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { REVIEW_FLAG_REASONS, type FlaggedReview } from '../lib/admin-review';
 import { ADMIN_MAX_OFFSET } from '../lib/admin';
 import { AdminReviewDetails } from './admin-review-details';
+import { formatIstTime } from '../lib/ist-time';
 const PAGE_SIZE = 5;
 export function AdminFlaggedReviews({ accountId }: { accountId: string }) {
   const [offset, setOffset] = useState(0), [version, setVersion] = useState(0);
@@ -30,7 +31,7 @@ export function AdminFlaggedReviews({ accountId }: { accountId: string }) {
     {!reviews.length ? <p>No flagged reviews. Admins can flag a review from Recent assessments.</p> : <ul className="adm-list">{reviews.map(review => <li key={review.id}>
       <button type="button" id={`adm-open-flag-${review.id}`} className="adm-review-link" aria-expanded={selected === review.id} onClick={() => setSelected(value => value === review.id ? null : review.id)}>{review.filmTitle} — view review</button>
       <span>{REVIEW_FLAG_REASONS[review.reason]}</span>{review.note ? <p>{review.note}</p> : null}
-      <span className="fine">Flagged {new Date(review.flaggedAt).toLocaleString()}{review.reviewChanged ? ' · Edited since flagging' : ''}</span>
+      <span className="fine">Flagged {formatIstTime(review.flaggedAt)}{review.reviewChanged ? ' · Edited since flagging' : ''}</span>
       {selected === review.id ? <AdminReviewDetails reviewId={review.id} accountId={accountId} onClose={() => { setSelected(null); document.getElementById(`adm-open-flag-${review.id}`)?.focus(); }} onChanged={notice => { setMessage(notice); setVersion(value => value + 1); }} /> : null}
     </li>)}</ul>}
     <div className="adm-pager"><button type="button" className="mvp-secondary" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - PAGE_SIZE))}>Newer flags</button><button type="button" className="mvp-secondary" disabled={offset + PAGE_SIZE >= total || offset + PAGE_SIZE > ADMIN_MAX_OFFSET} onClick={() => setOffset(value => value + PAGE_SIZE)}>Older flags</button></div>
