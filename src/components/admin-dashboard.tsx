@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react';
 import { adminHasMore } from '../lib/admin';
 import { useAuthSession } from '../lib/supabase/browser';
+import { AdminReviewDetails } from './admin-review-details';
+import { AdminFlaggedReviews } from './admin-flagged-reviews';
 
 type Rating = { category: string; severity: number };
-type Assessment = { filmTitle: string; submittedAt: string; updatedAt: string; edited: boolean; categoryCount: number; categories: Rating[] };
+type Assessment = { id: string; movieId: string; filmTitle: string; submittedAt: string; updatedAt: string; edited: boolean; categoryCount: number; categories: Rating[] };
 type Overview = {
   generatedAt: string;
   accounts: { total: number; last7Days: number; last30Days: number };
   films: { total: number; published: number; hidden: number };
   assessments: { total: number; neverEdited: number; edited: number; active: number; categoryRatings: number };
   recentAccounts: { nickname: string; joinedAt: string }[];
-  recentFilms: { title: string; year: number | null; importedAt: string }[];
+  recentFilms: { id: string; title: string; year: number | null; importedAt: string }[];
   recentAssessments: Assessment[];
 };
 
@@ -34,6 +36,9 @@ export function AdminDashboard() {
   const [offset, setOffset] = useState(0);
   const [requestVersion, setRequestVersion] = useState(0);
   const [privacyBlocked, setPrivacyBlocked] = useState(false);
+  const [tab, setTab] = useState<'overview' | 'flagged'>('overview');
+  const [selectedReview, setSelectedReview] = useState<string | null>(null);
+  const [moderationNotice, setModerationNotice] = useState('');
   const userId = !authLoading && !authError && !privacyBlocked ? session?.user?.id : null;
   const requestKey = userId ? `${userId}:${offset}:${requestVersion}` : null;
 
@@ -53,7 +58,7 @@ export function AdminDashboard() {
     window.addEventListener('triggerboxd:account-change', onAccountChange);
     return () => { window.removeEventListener('triggerboxd:account-change', onAccountChange); channel?.close(); };
   }, []);
-  useEffect(() => { setPrivacyBlocked(false); setOffset(0); setView(null); }, [session?.user?.id]);
+  useEffect(() => { setPrivacyBlocked(false); setOffset(0); setView(null); setSelectedReview(null); setModerationNotice(''); setTab('overview'); }, [session?.user?.id]);
 
   useEffect(() => {
     if (!requestKey) return;
@@ -89,6 +94,18 @@ export function AdminDashboard() {
   const empty = (text: string) => <p className="fine adm-empty">{text}</p>;
 
   return <div className="adm">
+    <div className="adm-tabs" role="tablist" aria-label="Dashboard sections" onKeyDown={event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'overview' : event.key === 'End' ? 'flagged' : tab === 'overview' ? 'flagged' : 'overview';
+      setTab(next); event.currentTarget.querySelector<HTMLButtonElement>(`#adm-tab-${next}`)?.focus();
+    }}>
+      <button type="button" role="tab" id="adm-tab-overview" aria-selected={tab === 'overview'} aria-controls="adm-panel-overview" tabIndex={tab === 'overview' ? 0 : -1} onClick={() => setTab('overview')}>Overview</button>
+      <button type="button" role="tab" id="adm-tab-flagged" aria-selected={tab === 'flagged'} aria-controls="adm-panel-flagged" tabIndex={tab === 'flagged' ? 0 : -1} onClick={() => setTab('flagged')}>Flagged reviews</button>
+    </div>
+    <div role="tabpanel" id="adm-panel-flagged" aria-labelledby="adm-tab-flagged" hidden={tab !== 'flagged'}>{tab === 'flagged' ? <AdminFlaggedReviews key={userId} accountId={userId} /> : null}</div>
+    <div role="tabpanel" id="adm-panel-overview" aria-labelledby="adm-tab-overview" hidden={tab !== 'overview'}>
+    {moderationNotice ? <p role="status">{moderationNotice}</p> : null}
     <p className="fine" role="status" aria-live="polite">Generated {shortDate(data.generatedAt)}. Page {(offset / PAGE_SIZE) + 1}.</p>
 
     <section className="adm-tiles" aria-label="Totals">
@@ -112,21 +129,23 @@ export function AdminDashboard() {
 
     <section aria-labelledby="adm-films">
       <h2 id="adm-films">Recently imported films</h2>
-      {data.recentFilms.length === 0 ? empty('No films imported yet.') : <ul className="adm-list">{data.recentFilms.map((film, index) => <li key={`${film.importedAt}-${index}`}><span className="adm-primary">{film.title}</span><span className="fine">{film.year ?? 'Year unknown'} · {shortDate(film.importedAt)}</span></li>)}</ul>}
+      {data.recentFilms.length === 0 ? empty('No films imported yet.') : <ul className="adm-list">{data.recentFilms.map(film => <li key={film.id}><a className="adm-primary" href={`/movies/${film.id}/`}>{film.title}</a><span className="fine">{film.year ?? 'Year unknown'} · {shortDate(film.importedAt)}</span></li>)}</ul>}
     </section>
 
     <section aria-labelledby="adm-assessments">
       <h2 id="adm-assessments">Recent assessments</h2>
-      {data.recentAssessments.length === 0 ? empty('No assessments yet.') : <ul className="adm-list">{data.recentAssessments.map((item, index) => <li key={`${item.updatedAt}-${index}`}>
-        <span className="adm-primary">{item.filmTitle}</span>
+      {data.recentAssessments.length === 0 ? empty('No assessments yet.') : <ul className="adm-list">{data.recentAssessments.map(item => <li key={item.id}>
+        <button type="button" id={`adm-open-review-${item.id}`} className="adm-review-link" aria-expanded={selectedReview === item.id} onClick={() => setSelectedReview(value => value === item.id ? null : item.id)}>{item.filmTitle} — view review</button>
         <span className="fine">Submitted {shortDate(item.submittedAt)}{item.edited ? ` · updated ${shortDate(item.updatedAt)}` : ' · not edited since'}</span>
         <span className="adm-ratings">{item.categories.length === 0 ? 'No category ratings' : item.categories.map(rating => `${categoryName(rating.category)}: ${SEVERITY_WORDS[rating.severity] ?? 'Unknown'}`).join(' · ')}{item.categoryCount > item.categories.length ? ` · +${item.categoryCount - item.categories.length} more` : ''}</span>
+        {tab === 'overview' && selectedReview === item.id ? <AdminReviewDetails key={`${userId}:${item.id}`} reviewId={item.id} accountId={userId} onClose={() => { setSelectedReview(null); document.getElementById(`adm-open-review-${item.id}`)?.focus(); }} onChanged={setModerationNotice} /> : null}
       </li>)}</ul>}
     </section>
 
     <div className="adm-pager">
       <button type="button" className="mvp-secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>Newer</button>
       <button type="button" className="mvp-secondary" disabled={!adminHasMore(data, offset, PAGE_SIZE)} onClick={() => setOffset(offset + PAGE_SIZE)}>Older</button>
+    </div>
     </div>
   </div>;
 }

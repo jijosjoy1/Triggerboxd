@@ -77,3 +77,23 @@
 @media(max-width:400px){.adm-tiles{grid-template-columns:1fr}.adm-tile dd{font-size:22px}.adm h2{font-size:20px}}
 .contributor-identity{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:13px;overflow-wrap:anywhere}
 .contributor-identity img{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.adm-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+.adm-tabs button{border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--text);padding:12px 18px;font:inherit;cursor:pointer;min-height:44px}
+.adm-tabs button[aria-selected=true]{border-color:var(--accent);background:#302638}
+.adm-review-link{border:0;background:transparent;color:var(--text);font:inherit;font-weight:650;text-align:left;text-decoration:underline;text-underline-offset:4px;padding:6px 0;min-height:44px;cursor:pointer;overflow-wrap:anywhere}
+.adm-review-detail{border-top:1px solid var(--line);margin-top:18px;padding-top:18px;min-width:0;max-width:100%}
+.adm-review-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.adm-review-heading h3{font-size:20px;margin:0}
+.adm-review-table-wrap{max-width:100%;overflow-x:auto;margin:20px 0}
+.adm-review-table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+.adm-review-table caption{text-align:left;font-weight:650;margin-bottom:12px}
+.adm-review-table th,.adm-review-table td{padding:12px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.adm-review-table tbody th{font-weight:500}
+.adm-review-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+.adm-flag-form{display:grid;gap:14px;max-width:540px;margin-top:20px}
+.adm-flag-form label{display:grid;gap:8px;font-size:14px}
+.adm-flag-form select,.adm-flag-form textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;background:var(--bg,#111318);color:var(--text);border:1px solid var(--line);border-radius:5px;padding:12px;font:inherit}
+.adm-flag-form textarea{resize:vertical}
+.adm-review-flag{border-left:3px solid #d99a45;padding-left:14px;margin:20px 0}
+.adm-review-error{color:#ffd0d0}
+.adm-tabs button:focus-visible,.adm-review-link:focus-visible,.adm-review-detail button:focus-visible,.adm-flag-form select:focus-visible,.adm-flag-form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:4px}

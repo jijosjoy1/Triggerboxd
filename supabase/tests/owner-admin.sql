@@ -133,8 +133,8 @@ select owner_admin_test.assert('response carries only allowlisted top-level fiel
   = 'accounts,assessments,films,generatedAt,recentAccounts,recentAssessments,recentFilms');
 select owner_admin_test.assert('recent rows carry only public summary fields',
   (select string_agg(key, ',' order by key) from jsonb_object_keys(public.get_admin_overview(25,0)->'recentAccounts'->0) k(key)) = 'joinedAt,nickname'
-  and (select string_agg(key, ',' order by key) from jsonb_object_keys(public.get_admin_overview(25,0)->'recentFilms'->0) k(key)) = 'importedAt,title,year'
-  and (select string_agg(key, ',' order by key) from jsonb_object_keys(public.get_admin_overview(25,0)->'recentAssessments'->0) k(key)) = 'categories,categoryCount,edited,filmTitle,submittedAt,updatedAt'
+  and (select string_agg(key, ',' order by key) from jsonb_object_keys(public.get_admin_overview(25,0)->'recentFilms'->0) k(key)) = 'id,importedAt,title,year'
+  and (select string_agg(key, ',' order by key) from jsonb_object_keys(public.get_admin_overview(25,0)->'recentAssessments'->0) k(key)) = 'categories,categoryCount,edited,filmTitle,id,movieId,submittedAt,updatedAt'
   and (select string_agg(key, ',' order by key) from jsonb_object_keys(public.get_admin_overview(25,0)->'recentAssessments'->0->'categories'->0) k(key)) = 'category,severity');
 select owner_admin_test.assert('response never leaks provider name, email or text content',
   (public.get_admin_overview(25,0))::text not like '%Google%'
