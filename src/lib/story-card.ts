@@ -1,16 +1,10 @@
-import { getFamilyAwkwardnessVerdict, type FamilyAwkwardnessLevel } from './signature-questions';
+import { FAMILY_AWKWARDNESS, familyAwkwardness, getFamilyAwkwardnessVerdict, type FamilyAwkwardnessLevel } from './signature-questions';
 import { CATEGORY_SLUGS, type CategoryRating } from './contracts';
 import type { FamilySummaryResult } from './representation-contracts';
 
-export const STORY_REACTIONS = [
-  {color:'#4A986C',asset:'/story/reactions/level-1-grandma.svg'},
-  {color:'#D5B84E',asset:'/story/reactions/level-2-silence.svg'},
-  {color:'#E58B43',asset:'/story/reactions/level-3-phone.svg'},
-  {color:'#D65C4D',asset:'/story/reactions/level-4-fan.svg'},
-  {color:'#8D3438',asset:'/story/reactions/level-5-remote.svg'},
-] as const;
-export const FAMILY_REPORT_COLORS=STORY_REACTIONS.map(reaction=>reaction.color);
-export function storyReaction(level:number|null){return level!==null && Number.isInteger(level) && level>=1 && level<=5?STORY_REACTIONS[level-1]:null;}
+export const STORY_REACTIONS = FAMILY_AWKWARDNESS;
+export const FAMILY_REPORT_COLORS=FAMILY_AWKWARDNESS.map(reaction=>reaction.color);
+export function storyReaction(level:number|null){return familyAwkwardness(level);}
 export function storyLevel(summary:FamilySummaryResult['familySummary']|null,personal=false):number|null {
   return summary && (personal && summary.count>0 || !summary.provisional && summary.count>=3) && Number.isInteger(summary.value) && summary.value!>=1 && summary.value!<=5 ? summary.value : null;
 }
@@ -93,19 +87,30 @@ export function drawStoryCard(canvas:HTMLCanvasElement,title:string,summary:Fami
   const verdict=fittedText(ctx,storyCaption(summary,personal),800,2,level===null?52:82,level===null?46:62);ctx.fillStyle=level===null?'#B9ADA0':accent;
   const verdictStart=verdict.lines.length===1?1010:970;
   verdict.lines.forEach((line,i)=>ctx.fillText(line,540,verdictStart+i*verdict.size*1.03));
-  if(level!==null && presentation.reaction?.naturalWidth && presentation.reaction.naturalHeight){ctx.drawImage(presentation.reaction,190,1088,700,700*presentation.reaction.naturalHeight/presentation.reaction.naturalWidth);}
+  if(level!==null && presentation.reaction?.naturalWidth && presentation.reaction.naturalHeight){ctx.drawImage(presentation.reaction,230,1088,620,620*presentation.reaction.naturalHeight/presentation.reaction.naturalWidth);}
   else if(level===null){ctx.font='72px Georgia';ctx.fillStyle='#B9ADA0';ctx.fillText('?',540,1220);}
-  ctx.font='22px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('AWKWARDNESS METER',540,1398);
+  const selectedRating=familyAwkwardness(level);
+  ctx.font='18px Arial';ctx.fillStyle='#B9ADA0';
+  ctx.fillText(`${personal?'PERSONAL FAMILY OPINION':`COMMUNITY FAMILY OPINION${summary&&summary.count>0?` · ${summary.count} viewer votes`:''}`} · Not a safety guarantee.`,540,1376);
+  ctx.font='bold 24px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('FAMILY AWKWARDNESS METER',540,1410);
   for(let i=0;i<5;i++){
+    const rating=FAMILY_AWKWARDNESS[i];
     const selected=level===i+1;
-    ctx.save();ctx.fillStyle=selected?STORY_REACTIONS[i].color:'#292C32';ctx.shadowColor=selected?STORY_REACTIONS[i].color:'transparent';ctx.shadowBlur=selected?18:0;
-    ctx.beginPath();ctx.roundRect(72+i*190,1420,176,52,12);ctx.fill();ctx.shadowBlur=0;
-    if(selected){ctx.strokeStyle='#F7EBD5';ctx.lineWidth=2;ctx.stroke();}
-    ctx.font='bold 28px Arial';ctx.fillStyle=selected&&i<3?'#111318':'#F7EBD5';ctx.fillText(String(i+1),160+i*190,1456);ctx.restore();
+    ctx.save();ctx.fillStyle=selected?rating.color:`${rating.color}38`;ctx.shadowColor=selected?rating.color:'transparent';ctx.shadowBlur=selected?18:0;
+    ctx.beginPath();ctx.roundRect(72+i*190,1430,176,52,12);ctx.fill();ctx.shadowBlur=0;
+    ctx.strokeStyle=selected?'#F7EBD5':`${rating.color}99`;ctx.lineWidth=selected?3:1;ctx.stroke();
+    ctx.font='27px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText(rating.emoji,142+i*190,1466);
+    ctx.font='bold 26px Arial';ctx.fillStyle=selected&&i<3?'#111318':'#F7EBD5';ctx.fillText(String(rating.level),189+i*190,1466);ctx.restore();
   }
-  ctx.fillStyle='#F7EBD5';ctx.font='bold 32px Arial';ctx.fillText(level===null?'—':`${level}/5`,540,1520);
-  ctx.font='24px Arial';ctx.fillStyle='#B9ADA0';const evidence=personal?'MY VERDICT':`COMMUNITY VERDICT${summary&&summary.count>0?` · ${summary.count} viewer votes`:''}`;ctx.fillText(evidence,540,1555);
-  ctx.font='20px Arial';ctx.fillText('Subjective family opinion. Not a safety guarantee.',540,1590);
+  if(selectedRating){
+    ctx.fillStyle=`${selectedRating.color}30`;ctx.beginPath();ctx.roundRect(72,1492,936,116,22);ctx.fill();
+    ctx.strokeStyle=`${selectedRating.color}AA`;ctx.lineWidth=2;ctx.stroke();
+    ctx.textAlign='left';ctx.font='48px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText(selectedRating.emoji,103,1557);
+    ctx.fillStyle='#F7EBD5';ctx.font='bold 31px Arial';ctx.fillText(selectedRating.title,174,1540);
+    ctx.fillStyle='#F7EBD5';ctx.font='25px Arial';wrapStoryText(ctx,selectedRating.description,790,2).forEach((line,i)=>ctx.fillText(line,174,1568+i*28));
+  }else{
+    ctx.fillStyle='#B9ADA0';ctx.font='22px Arial';ctx.fillText('No family awkwardness verdict yet.',540,1546);
+  }
   ctx.textAlign='center';ctx.font='bold 32px Arial';ctx.fillStyle='#F7EBD5';ctx.fillText('For full content warnings',540,1638);
   ctx.font='22px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText('triggerboxd.com',540,1669);
   ctx.textAlign='left';ctx.font='18px Arial';ctx.fillStyle='#B9ADA0';ctx.fillText(artwork?'Artwork via TMDb':'Artwork unavailable',72,354);

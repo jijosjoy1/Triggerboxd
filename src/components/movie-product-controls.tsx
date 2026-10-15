@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
 import { CATEGORY_SLUGS, WARNING_DESCRIPTOR_IDS, type CategoryRating, type CategorySlug, type OwnContributionResult, type OwnFamilyVoteResult } from '../lib/contracts';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
-import { CONTENT_SEVERITIES, FAMILY_AWKWARDNESS_LEVELS } from '../lib/signature-questions';
-import { getFamilyAwkwardnessVerdict } from '../lib/signature-questions';
+import { CONTENT_SEVERITIES, FAMILY_AWKWARDNESS, familyAwkwardness } from '../lib/signature-questions';
 import {MovieStory} from './movie-story';
 import type { MovieWarning } from './movie-warnings';
 
@@ -118,8 +117,9 @@ export function FamilyVote({ movieId, watched = false, onChanged }: { movieId: s
   if (loading || error) return null;
   if (!session?.user) return <Link className="btn-inline" href={`/login/?next=${encodeURIComponent(`/movies/${movieId}/`)}`}>Sign in to vote</Link>;
   if (!watched) return null;
-  return <div className="family-vote"><span className="family-vote-label" id={`family-vote-${movieId}`}>Your awkwardness vote</span>
-    <div className="family-vote-buttons" role="group" aria-labelledby={`family-vote-${movieId}`}>{FAMILY_AWKWARDNESS_LEVELS.map(level => <button key={level} type="button" className="family-vote-option" data-level={level} aria-label={`Vote ${level} of 5: ${getFamilyAwkwardnessVerdict(level,0)}`} aria-pressed={own?.value === level} disabled={busy || !ready} onClick={() => void vote(level)}><span className="family-score" aria-hidden="true">{level}</span><span className="family-vote-copy">{getFamilyAwkwardnessVerdict(level,0)}</span></button>)}</div>
+  return <div className="family-vote"><span className="family-vote-label" id={`family-vote-${movieId}`}>Family awkwardness meter</span>
+    <div className="family-vote-buttons" role="group" aria-labelledby={`family-vote-${movieId}`}>{FAMILY_AWKWARDNESS.map(rating => <button key={rating.level} type="button" className="family-vote-option" data-level={rating.level} style={{'--family-level-color':rating.color} as CSSProperties} aria-label={`Vote ${rating.level} of 5: ${rating.verdict}`} aria-pressed={own?.value === rating.level} disabled={busy || !ready} onClick={() => void vote(rating.level)}><span aria-hidden="true">{rating.emoji}</span><span className="family-score" aria-hidden="true">{rating.level}</span></button>)}</div>
+    {familyAwkwardness(own?.value ?? null) ? <div className="family-vote-selected" role="status" style={{'--family-level-color':familyAwkwardness(own?.value ?? null)?.color} as CSSProperties}><span aria-hidden="true">{familyAwkwardness(own?.value ?? null)?.emoji}</span><div><strong>{familyAwkwardness(own?.value ?? null)?.verdict}</strong><p>{familyAwkwardness(own?.value ?? null)?.description}</p></div></div> : null}
     {message ? <p role="status" className="fine">{message}</p> : null}</div>;
 }
 

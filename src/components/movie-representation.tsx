@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react';
 
-import { getFamilyAwkwardnessVerdict, FAMILY_INDICATORS, type FamilyAwkwardnessLevel } from '../lib/signature-questions';
+import { familyAwkwardness } from '../lib/signature-questions';
 
 import {refreshAuthSession,useAuthSession} from '../lib/supabase/browser';
 
@@ -50,7 +50,7 @@ function FamilyCheck({movieId}:{movieId:string}) {
 
  return <div className="mvp-family-summary"><button type="button" className="mvp-secondary" disabled={busy} onClick={()=>{if(data){setData(null);setMessage('');}else void check();}}>{busy?'Checking…':data?'Hide family opinion':'Check family opinion'}</button>{!data ? <p className="fine">⚪ Not yet rated / not shown</p> : null}{data?<>
 
- <p>{data.familySummary.value!==null ? <span aria-hidden="true">{FAMILY_INDICATORS[data.familySummary.value-1]} </span> : null}{data.familySummary.value===null?'⚪ Not yet rated':getFamilyAwkwardnessVerdict(data.familySummary.value as FamilyAwkwardnessLevel,0)}</p>
+ <p>{familyAwkwardness(data.familySummary.value) ? <><span aria-hidden="true">{familyAwkwardness(data.familySummary.value)?.emoji} </span>{familyAwkwardness(data.familySummary.value)?.verdict} <span className="fine">{familyAwkwardness(data.familySummary.value)?.description}</span></> : '⚪ Not yet rated'}</p>
 
  <p className="fine">Subjective viewer opinions, not a suitability guarantee.</p>
 

@@ -92,9 +92,55 @@ test('critical text is in story safe area and personal/early community labels ar
   const ctx={createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},roundRect(){},fill(){},stroke(){},fillRect(){},fillText(text,x,y){printed.push({text,x,y})},measureText:text=>({width:text.length*10})};
   drawStoryCard({getContext:()=>ctx},'Long movie title '.repeat(30),{value:2,count:1,provisional:false},undefined,undefined,true);
   assert.ok(printed.every(item=>item.x>=72&&item.x<=1008&&item.y>=220&&item.y<=1670));
-  assert.match(printed.map(item=>item.text).join(' '),/MY VERDICT/);
-  assert.match(printed.map(item=>item.text).join(' '),/2\/5/);
+  assert.match(printed.map(item=>item.text).join(' '),/PERSONAL FAMILY OPINION/);
+  assert.match(printed.map(item=>item.text).join(' '),/FAMILY AWKWARDNESS METER/);
+  assert.doesNotMatch(printed.map(item=>item.text).join(' '),/MY VERDICT|2\/5/);
   printed.length=0;drawStoryCard({getContext:()=>ctx},'Film',{value:2,count:1,provisional:true});
   assert.doesNotMatch(printed.map(item=>item.text).join(' '),/2\/5|awkward silences/);
   assert.match(printed.map(item=>item.text).join(' '),/Early votes/);
+});
+
+test('all five family levels render exact emoji buttons and one selected explanation',()=>{
+  const expected=[
+    ['😊','Even grandma can join.','Nothing likely to make family viewing awkward.','COMFORTABLE'],
+    ['🤫','A few awkward silences.','Mildly awkward or suggestive moments.','A LITTLE AWKWARD'],
+    ['😐','Suddenly, WhatsApp looks interesting.','Some scenes might make you reach for your phone.','AWKWARD'],
+    ['🥵','The ceiling fan deserves an Oscar.','Significant awkward content. Expect some uncomfortable moments.','VERY AWKWARD'],
+    ['💀',"The remote won't save you.",'Very uncomfortable moments that might make family viewing difficult.','EXTREMELY AWKWARD'],
+  ];
+  for(let level=1;level<=5;level++){
+    const printed=[];const gradient={addColorStop(){}};
+    const ctx={createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},roundRect(){},fill(){},stroke(){},fillRect(){},fillText(text,x,y){printed.push({text,x,y})},measureText:text=>({width:Array.from(text).length*10})};
+    const canvas={getContext:()=>ctx};
+    drawStoryCard(canvas,'Film',{value:level,count:1,provisional:false},undefined,undefined,true);
+    const joined=printed.map(item=>item.text).join(' ');
+    assert.equal(canvas.width,1080);assert.equal(canvas.height,1920);
+    assert.match(joined,/PERSONAL FAMILY OPINION/);
+    assert.equal(printed.filter(item=>item.text===expected[level-1][1]).length,1);
+    assert.match(joined,new RegExp(expected[level-1][3]));
+    assert.ok(joined.includes(expected[level-1][2]));
+    assert.match(joined,/FAMILY AWKWARDNESS METER/);
+    assert.equal(printed.filter(item=>/^[1-5]$/.test(item.text)).length,5);
+    for(const [emoji] of expected) assert.ok(printed.some(item=>item.text===emoji));
+    assert.doesNotMatch(joined,/MY VERDICT|\b[1-5]\/5\b/);
+  }
+  const unknown=[];const gradient={addColorStop(){}};
+  const ctx={createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},roundRect(){},fill(){},stroke(){},fillRect(){},fillText(text){unknown.push(text)},measureText:text=>({width:Array.from(text).length*10})};
+  drawStoryCard({getContext:()=>ctx},'Film',null);
+  assert.match(unknown.join(' '),/No family awkwardness verdict yet/);
+  assert.doesNotMatch(unknown.join(' '),/Even grandma can join/);
+});
+
+test('family illustration clears the source label before the compact meter',()=>{
+  const text=[],images=[];const gradient={addColorStop(){}};
+  const ctx={createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},roundRect(){},fill(){},stroke(){},fillRect(){},drawImage(...args){images.push(args)},fillText(value,x,y){text.push({value,x,y})},measureText:value=>({width:Array.from(value).length*10})};
+  const reaction={naturalWidth:720,naturalHeight:300};
+  drawStoryCard({getContext:()=>ctx},'Film',{value:4,count:1,provisional:false},undefined,undefined,true,null,{reaction});
+  const art=images.find(args=>args[0]===reaction);
+  const source=text.find(item=>item.value.startsWith('PERSONAL FAMILY OPINION'));
+  const heading=text.find(item=>item.value==='FAMILY AWKWARDNESS METER');
+  assert.ok(art);assert.ok(source);assert.ok(heading);
+  assert.match(source.value,/Not a safety guarantee/);
+  assert.ok(art[2]+art[4]+18<source.y);
+  assert.ok(source.y+24<heading.y);
 });

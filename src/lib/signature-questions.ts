@@ -9,7 +9,6 @@ export const DESCRIPTION_SPOILER_PLACEHOLDER = 'Details hidden to avoid spoilers
 export const UNRATED_VERDICT = 'Not yet rated';
 export const UNRATED_INDICATOR = '⚪';
 export const MORE_QUESTIONS_LABEL = 'Show 2 more ↓';
-export const FAMILY_INDICATORS = ['🟢','🟡','🟠','🔴','💀'] as const;
 
 export type SignatureQuestionId =
   | 'parents'
@@ -194,13 +193,19 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
   },
 ] as const;
 
-export const familyAwkwardnessVerdicts: Readonly<Record<FamilyAwkwardnessLevel, string>> = {
-  1: 'Even grandma can join.',
-  2: 'A few awkward silences.',
-  3: 'Suddenly, WhatsApp looks interesting.',
-  4: 'The ceiling fan deserves an Oscar.',
-  5: "The remote won't save you.",
-};
+/** Shared presentation data for family votes, the guide and exported story cards. */
+export const FAMILY_AWKWARDNESS = [
+  {level:1,emoji:'😊',verdict:'Even grandma can join.',description:'Nothing likely to make family viewing awkward.',title:'COMFORTABLE',color:'#4A986C',asset:'/story/reactions/level-1-grandma.svg'},
+  {level:2,emoji:'🤫',verdict:'A few awkward silences.',description:'Mildly awkward or suggestive moments.',title:'A LITTLE AWKWARD',color:'#D5B84E',asset:'/story/reactions/level-2-silence.svg'},
+  {level:3,emoji:'😐',verdict:'Suddenly, WhatsApp looks interesting.',description:'Some scenes might make you reach for your phone.',title:'AWKWARD',color:'#E58B43',asset:'/story/reactions/level-3-phone.svg'},
+  {level:4,emoji:'🥵',verdict:'The ceiling fan deserves an Oscar.',description:'Significant awkward content. Expect some uncomfortable moments.',title:'VERY AWKWARD',color:'#D65C4D',asset:'/story/reactions/level-4-fan.svg'},
+  {level:5,emoji:'💀',verdict:"The remote won't save you.",description:'Very uncomfortable moments that might make family viewing difficult.',title:'EXTREMELY AWKWARD',color:'#8D3438',asset:'/story/reactions/level-5-remote.svg'},
+] as const;
+export const FAMILY_INDICATORS = FAMILY_AWKWARDNESS.map(rating => rating.emoji);
+
+export function familyAwkwardness(level: number | null) {
+  return level !== null && Number.isInteger(level) && level >= 1 && level <= 5 ? FAMILY_AWKWARDNESS[level - 1] : null;
+}
 
 /**
  * Descriptors that make a report serious enough to replace humour with factual
@@ -269,5 +274,5 @@ export function getFamilyAwkwardnessVerdict(
   if (hidden) return hidden;
   if (level === null || !FAMILY_AWKWARDNESS_LEVELS.includes(level)) return UNRATED_VERDICT;
   if (seriousHarm) return `Community family-awkwardness rating: ${level} of 5.`;
-  return familyAwkwardnessVerdicts[level];
+  return familyAwkwardness(level)?.verdict ?? UNRATED_VERDICT;
 }
