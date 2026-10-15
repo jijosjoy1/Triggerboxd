@@ -68,12 +68,12 @@ export default function PictureForm({ userId, nickname }: { userId: string; nick
   }
   const source = preview || avatarUrl(savedId);
   return <section className={styles.section} aria-labelledby="profile-picture-title">
-    <h2 id="profile-picture-title">Profile picture</h2>
+    <h2 id="profile-picture-title">Profile picture (optional)</h2>
     <div className={styles.identity}>
       {source ? <img className={styles.picture} src={source} alt={draft ? 'New profile picture preview' : 'Your profile picture'} width={88} height={88} /> : <span className={styles.placeholder} aria-hidden="true">{nickname.trim().slice(0, 1).toUpperCase() || '?'}</span>}
       <div><strong>{nickname}</strong><p className={styles.hint}>{draft ? 'Preview · not saved yet' : loading ? 'Loading picture…' : savedId ? 'Public on community notes' : 'No picture added'}</p></div>
     </div>
-    <p className={styles.hint}>Saving a picture makes it and your nickname public on your existing and future community notes. Google photos are never imported. Use an avatar if you prefer not to show your face.</p>
+    <p className={styles.hint}>You can leave this blank. Saving a picture makes it and your nickname public on your existing and future community notes. Google photos are never imported. Use an avatar if you prefer not to show your face.</p>
     <label className={styles.label}>Choose a picture<input ref={input} type="file" accept="image/jpeg,image/png,image/webp" disabled={loading || busy} onChange={event => { const file = event.target.files?.[0]; if (file) void choose(file); }} /></label>
     <p className={styles.hint}>JPG, PNG or WebP, up to 5 MB and 16 megapixels. Preview is cropped to a square. Only a resized copy is saved; photo metadata is removed.</p>
     <div className={styles.actions}>

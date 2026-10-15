@@ -27,8 +27,8 @@ function Editor({ nickname, csrfToken }: { nickname: string; csrfToken: string }
   }
 
   return <form className={styles.form} onSubmit={save}>
-    <label>Nickname<input name="nickname" autoComplete="nickname" maxLength={60} value={value} onChange={event => setValue(event.target.value)} required disabled={busy} /></label>
-    <p className={styles.fine}>Your nickname appears on community notes if you add a public profile picture. Avoid your real name or contact details.</p>
+    <label>Nickname<input name="nickname" autoComplete="nickname" placeholder="ackermen1234" maxLength={60} value={value} onChange={event => setValue(event.target.value)} required disabled={busy} /></label>
+    <p className={styles.fine}>For example, ackermen1234. Choose a nickname instead of your real name or contact details. You can save your nickname and contribute without a profile picture.</p>
     <button className="button" disabled={busy}>{busy ? 'Saving…' : 'Save nickname'}</button>
     {message ? <p role="status">{message}</p> : null}
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
