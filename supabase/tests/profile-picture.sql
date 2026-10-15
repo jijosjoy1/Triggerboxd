@@ -1,0 +1,33 @@
+begin;
+create schema picture_test;
+create table picture_test.results(name text,passed boolean);
+grant usage on schema picture_test to authenticated;
+create function picture_test.assert(name text,ok boolean) returns void language plpgsql security definer as $$ begin
+ if ok is distinct from true then raise exception 'ASSERTION FAILED: %',name;end if;
+ insert into picture_test.results values(name,true);end $$;
+insert into auth.users(id,email_confirmed_at) values('e0000000-0000-4000-8000-000000000001',now()),('e0000000-0000-4000-8000-000000000002',now());
+update public.profiles set display_name='Movie Owl' where user_id='e0000000-0000-4000-8000-000000000001';
+select picture_test.assert('raw picture table unavailable to API clients',not has_table_privilege('anon','private.profile_pictures','SELECT') and not has_table_privilege('authenticated','private.profile_pictures','UPDATE'));
+select picture_test.assert('client cannot bypass server image sanitation',not has_function_privilege('authenticated','public.set_profile_picture(uuid,text)','EXECUTE') and not has_function_privilege('anon','public.set_profile_picture(uuid,text)','EXECUTE'));
+select public.set_profile_picture('e0000000-0000-4000-8000-000000000001',encode(decode('ffd8ffd9','hex'),'base64'));
+select picture_test.assert('public attribution contains only selected nickname and opaque picture id',
+ (select array_agg(k order by k)=array['avatarId','nickname'] from jsonb_object_keys(private.public_picture_author('e0000000-0000-4000-8000-000000000001')) k));
+select picture_test.assert('non-uploading accounts retain anonymous contributions',private.public_picture_author('e0000000-0000-4000-8000-000000000002') is null);
+insert into public.movies(id,tmdb_id,title,original_title) values('e0000000-0000-4000-8000-000000000003',88888,'Picture test','Picture test');
+insert into private.movie_notes(id,user_id,movie_id,category_slug,comment,spoiler_level,severity,revision) values('e0000000-0000-4000-8000-000000000004','e0000000-0000-4000-8000-000000000001','e0000000-0000-4000-8000-000000000003','animal_harm','A public note',0,0,1);
+select picture_test.assert('visible notes show opted-in nickname',public.get_movie_notes('e0000000-0000-4000-8000-000000000003')->'notes'->0->'author'->>'nickname'='Movie Owl');
+update private.movie_notes set spoiler_level=1 where id='e0000000-0000-4000-8000-000000000004';
+select picture_test.assert('protected notes do not disclose author before reveal',public.get_movie_notes('e0000000-0000-4000-8000-000000000003')->'notes'->0->>'author' is null);
+select picture_test.assert('explicit reveal includes the opted-in author',public.get_movie_notes('e0000000-0000-4000-8000-000000000003',array['animal_harm'],1::smallint,20,0)->'notes'->0->'author'->>'nickname'='Movie Owl');
+create table picture_test.previous as select id from private.profile_pictures where user_id='e0000000-0000-4000-8000-000000000001';
+select public.set_profile_picture('e0000000-0000-4000-8000-000000000001',encode(decode('ffd8ffd9','hex'),'base64'));
+select picture_test.assert('replacement removes old public image id',public.get_profile_picture((select id from picture_test.previous)) is null);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e0000000-0000-4000-8000-000000000002',true);
+select picture_test.assert('other account cannot inspect owner picture settings',public.get_my_profile_picture()->>'avatarId' is null);
+reset role;
+select public.set_profile_picture('e0000000-0000-4000-8000-000000000001',null);
+select picture_test.assert('remove deletes stored bytes and public attribution',not exists(select 1 from private.profile_pictures where user_id='e0000000-0000-4000-8000-000000000001') and private.public_picture_author('e0000000-0000-4000-8000-000000000001') is null);
+select picture_test.assert('removal clears attribution from existing notes',public.get_movie_notes('e0000000-0000-4000-8000-000000000003',array['animal_harm'],1::smallint,20,0)->'notes'->0->>'author' is null);
+select name,passed from picture_test.results;
+rollback;

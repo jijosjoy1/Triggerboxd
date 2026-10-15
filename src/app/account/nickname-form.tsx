@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { authMutation, refreshAuthSession, useAuthSession } from '../../lib/supabase/browser';
 import styles from '../login/login.module.css';
+import PictureForm from './picture-form';
 
 function Editor({ nickname, csrfToken }: { nickname: string; csrfToken: string }) {
   const [value, setValue] = useState(nickname);
@@ -27,7 +28,7 @@ function Editor({ nickname, csrfToken }: { nickname: string; csrfToken: string }
 
   return <form className={styles.form} onSubmit={save}>
     <label>Nickname<input name="nickname" autoComplete="nickname" maxLength={60} value={value} onChange={event => setValue(event.target.value)} required disabled={busy} /></label>
-    <p className={styles.fine}>Choose a name you are comfortable using if contributor names are shown in the future. Avoid your real name or contact details.</p>
+    <p className={styles.fine}>Your nickname appears on community notes if you add a public profile picture. Avoid your real name or contact details.</p>
     <button className="button" disabled={busy}>{busy ? 'Saving…' : 'Save nickname'}</button>
     {message ? <p role="status">{message}</p> : null}
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
@@ -37,8 +38,9 @@ function Editor({ nickname, csrfToken }: { nickname: string; csrfToken: string }
 export default function NicknameForm() {
   const { session, loading, error } = useAuthSession();
   return <section className={styles.panel}>
-    <p className="eyebrow">Your account</p><h1>Nickname</h1>
+    <p className="eyebrow">Your account</p><h1>Your profile</h1>
     {loading ? <p role="status">Checking your account…</p> : error ? <p className={styles.error} role="alert">{error}</p> : session?.user ? <Editor key={session.user.id} nickname={session.user.nickname} csrfToken={session.csrfToken} /> : <p><Link href="/login/?next=%2Faccount%2F">Sign in to choose a nickname</Link></p>}
+    {!loading && !error && session?.user ? <PictureForm key={session.user.id} userId={session.user.id} nickname={session.user.nickname} /> : null}
     <p><Link href="/contributions/">Your contributions</Link></p>
   </section>;
 }

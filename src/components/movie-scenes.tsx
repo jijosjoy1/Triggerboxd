@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CATEGORY_SLUGS, type CategorySlug } from '../lib/contracts';
 import { formatTimestamp, parseTimestamp, type MovieNote, type MovieNotes } from '../lib/scene-contracts';
 import { refreshAuthSession, useAuthSession } from '../lib/supabase/browser';
+import { ContributorIdentity } from './contributor-identity';
 
 const label=(s:string)=>({
  gore_graphic_violence:'Gore / disturbing visuals',
@@ -58,6 +59,7 @@ function ScenePanel({movieId,signedIn,onChanged,watched,readOnly}:{movieId:strin
   <p role="status" aria-live="polite">{loading?'Loading notes…':status}</p>
   {!loading&&!status&&page.notes.length===0&&<p>No public notes in this view.</p>}
   <ul className="mvp-scene-list">{page.notes.map(note=><li key={note.id}>
+   <ContributorIdentity author={note.author}/>
    <strong>{label(note.category)}</strong> {note.severity!=null&&<span> · {['None','Mild','Moderate','Severe','Very severe','Extreme'][note.severity]}</span>} {note.startSeconds!==null&&<span>{formatTimestamp(note.startSeconds)}{note.endSeconds!==null?` – ${formatTimestamp(note.endSeconds)}`:''}</span>}
    {note.version&&<p>Version: {note.version}</p>}
    {note.comment===null?<button type="button" disabled={loading} onClick={()=>void load(0,1,note.category)}>Reveal details for this category</button>:<p className="mvp-scene-comment">{note.comment}</p>}

@@ -1,6 +1,6 @@
 import { CATEGORY_SLUGS, type CategorySlug } from './contracts';
 import { ValidationError, isUuid } from './validation';
-export interface MovieNote {id:string;revision:number;category:CategorySlug;comment:string|null;startSeconds:number|null;endSeconds:number|null;version:string|null;spoilerLevel?:0|1|2;severity?:0|1|2|3|4|5|null}
+export interface MovieNote {id:string;revision:number;category:CategorySlug;comment:string|null;startSeconds:number|null;endSeconds:number|null;version:string|null;spoilerLevel?:0|1|2;severity?:0|1|2|3|4|5|null;author?:{nickname:string;avatarId:string}|null}
 export interface MovieNotes {notes:MovieNote[];nextOffset:number|null}
 function record(v:unknown,keys:string[],required=keys){if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!keys.includes(k))||required.some(k=>!Object.hasOwn(v,k)))throw new ValidationError('body','Use documented fields.');return v as Record<string,unknown>;}
 function num(v:unknown,min:number,max=Number.MAX_SAFE_INTEGER){if(typeof v!=='number'||!Number.isSafeInteger(v)||v<min||v>max)throw new ValidationError('value','Invalid number.');return v;}

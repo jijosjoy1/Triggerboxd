@@ -32,14 +32,14 @@ export function errorResponse(error:unknown):Response {
   if(candidate==='RATE_LIMITED')headers['retry-after']=String(typeof value.retryAfterSeconds==='number'?Math.max(1,Math.min(3600,Math.ceil(value.retryAfterSeconds))):60);
   return Response.json({error:{code:candidate,message:messages[candidate],requestId:crypto.randomUUID()}},{status:statuses[candidate],headers});
 }
-export async function readJsonBody(request:Request):Promise<Record<string,unknown>> {
+export async function readJsonBody(request:Request,maxBytes=8192):Promise<Record<string,unknown>> {
   if(request.headers.get('content-type')?.split(';')[0].trim().toLowerCase()!=='application/json')throw new ApiError('INVALID_REQUEST');
-  if(Number(request.headers.get('content-length'))>8192)throw new ApiError('PAYLOAD_TOO_LARGE');
+  if(Number(request.headers.get('content-length'))>maxBytes)throw new ApiError('PAYLOAD_TOO_LARGE');
   const reader=request.body?.getReader();
   if(!reader)throw new ApiError('INVALID_REQUEST');
   const parts:Uint8Array[]=[];let length=0;
   try {
-    while(true){const {done,value}=await reader.read();if(done)break;length+=value.byteLength;if(length>8192){await reader.cancel();throw new ApiError('PAYLOAD_TOO_LARGE');}parts.push(value);}
+    while(true){const {done,value}=await reader.read();if(done)break;length+=value.byteLength;if(length>maxBytes){await reader.cancel();throw new ApiError('PAYLOAD_TOO_LARGE');}parts.push(value);}
     const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.byteLength;}
     const value:unknown=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
     if(!value||typeof value!=='object'||Array.isArray(value))throw new ApiError('INVALID_REQUEST');
