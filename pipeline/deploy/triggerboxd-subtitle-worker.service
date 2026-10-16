@@ -1,0 +1,31 @@
+# Template only. Do not enable before capacity, credentials and API deployment checks.
+[Unit]
+Description=Triggerboxd private subtitle analysis worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=triggerboxd-worker
+Group=triggerboxd-worker
+WorkingDirectory=/opt/triggerboxd-pipeline
+EnvironmentFile=/etc/triggerboxd-pipeline.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/triggerboxd-pipeline/.venv/bin/python -u run_worker.py --provider subdl
+Restart=on-failure
+RestartSec=60
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/triggerboxd-pipeline
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CPUQuota=20%
+MemoryMax=192M
+TasksMax=16
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

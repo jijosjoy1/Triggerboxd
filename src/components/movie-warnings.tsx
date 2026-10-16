@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { MovieShare } from './movie-share';
+import { MovieSubtitleEstimate } from './movie-subtitle-estimate';
 import { QuestionHelp } from './question-help';
 import { useFilmList } from './film-list';
 import { MovieScenes } from './movie-scenes';
@@ -76,7 +77,7 @@ export function MovieWarnings({ warnings, contributorCount, movieId, refreshKey 
     const severity = warning?.severity ?? null;
     return <li key={question.id}><div className="question-content"><QuestionHelp id={question.id} prompt={question.prompt}/>
       {questionLabels[question.id] ? <p className="question-category">{questionLabels[question.id]}</p> : null}
-      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /></> : severity !== null ? <p className="fine">{getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors, severity))}</p> : noReportsCopy[question.id] ? <p className="fine">{noReportsCopy[question.id]}</p> : null}
+      {question.id === 'parents' && movieId ? <><FamilyVote movieId={movieId} watched={watched} onChanged={onGuideChanged}/><FamilySummaryCheck movieId={movieId} refreshKey={refreshKey} /><MovieSubtitleEstimate movieId={movieId}/></> : severity !== null ? <p className="fine">{getSignatureVerdict(question.id, severity, 0, isSeriousHarm(category ?? '', warning?.descriptors, severity))}</p> : noReportsCopy[question.id] ? <p className="fine">{noReportsCopy[question.id]}</p> : null}
       {question.id!=='parents' ? <SeverityBadge severity={severity}/> : null}
     </div></li>;
   }); }

@@ -5,6 +5,7 @@ import { adminHasMore } from '../lib/admin';
 import { useAuthSession } from '../lib/supabase/browser';
 import { AdminReviewDetails } from './admin-review-details';
 import { AdminFlaggedReviews } from './admin-flagged-reviews';
+import { AdminSubtitleJobs } from './admin-subtitle-jobs';
 import { formatIstTime } from '../lib/ist-time';
 
 type Rating = { category: string; severity: number };
@@ -36,7 +37,7 @@ export function AdminDashboard() {
   const [offset, setOffset] = useState(0);
   const [requestVersion, setRequestVersion] = useState(0);
   const [privacyBlocked, setPrivacyBlocked] = useState(false);
-  const [tab, setTab] = useState<'overview' | 'flagged'>('overview');
+  const [tab, setTab] = useState<'overview' | 'flagged' | 'subtitles'>('overview');
   const [selectedReview, setSelectedReview] = useState<string | null>(null);
   const [moderationNotice, setModerationNotice] = useState('');
   const userId = !authLoading && !authError && !privacyBlocked ? session?.user?.id : null;
@@ -97,13 +98,16 @@ export function AdminDashboard() {
     <div className="adm-tabs" role="tablist" aria-label="Dashboard sections" onKeyDown={event => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
-      const next = event.key === 'Home' ? 'overview' : event.key === 'End' ? 'flagged' : tab === 'overview' ? 'flagged' : 'overview';
+      const tabs = ['overview', 'flagged', 'subtitles'] as const;
+      const next = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs[2] : tabs[(tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % tabs.length];
       setTab(next); event.currentTarget.querySelector<HTMLButtonElement>(`#adm-tab-${next}`)?.focus();
     }}>
       <button type="button" role="tab" id="adm-tab-overview" aria-selected={tab === 'overview'} aria-controls="adm-panel-overview" tabIndex={tab === 'overview' ? 0 : -1} onClick={() => setTab('overview')}>Overview</button>
       <button type="button" role="tab" id="adm-tab-flagged" aria-selected={tab === 'flagged'} aria-controls="adm-panel-flagged" tabIndex={tab === 'flagged' ? 0 : -1} onClick={() => setTab('flagged')}>Flagged reviews</button>
+      <button type="button" role="tab" id="adm-tab-subtitles" aria-selected={tab === 'subtitles'} aria-controls="adm-panel-subtitles" tabIndex={tab === 'subtitles' ? 0 : -1} onClick={() => setTab('subtitles')}>Triggerboxd Thinks</button>
     </div>
     <div role="tabpanel" id="adm-panel-flagged" aria-labelledby="adm-tab-flagged" hidden={tab !== 'flagged'}>{tab === 'flagged' ? <AdminFlaggedReviews key={userId} accountId={userId} /> : null}</div>
+    <div role="tabpanel" id="adm-panel-subtitles" aria-labelledby="adm-tab-subtitles" hidden={tab !== 'subtitles'}>{tab === 'subtitles' ? <AdminSubtitleJobs key={userId} accountId={userId} /> : null}</div>
     <div role="tabpanel" id="adm-panel-overview" aria-labelledby="adm-tab-overview" hidden={tab !== 'overview'}>
     {moderationNotice ? <p role="status">{moderationNotice}</p> : null}
     <p className="fine" role="status" aria-live="polite">Generated {shortDate(data.generatedAt)}. Page {(offset / PAGE_SIZE) + 1}.</p>

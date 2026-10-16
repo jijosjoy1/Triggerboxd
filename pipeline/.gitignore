@@ -1,0 +1,10 @@
+.venv/
+out/
+subs/
+state.sqlite
+state.sqlite-*
+*.pyc
+__pycache__/
+.env
+worker-cache/
+worker-lock.sqlite*

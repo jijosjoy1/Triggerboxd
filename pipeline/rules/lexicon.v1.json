@@ -1,0 +1,65 @@
+{
+  "version": "2026-10-16.2",
+  "provenance": {
+    "note": "Hand-curated English seed for subtitle text only. This is an audited starting vocabulary, NOT a complete classifier and NOT a severity scale.",
+    "language": "en",
+    "notCovered": [
+      "Malayalam, Tamil, Telugu and Hindi terms are not included yet; Indic support needs a normalisation/tokenisation pass first.",
+      "No LDNOOBW list is bundled. If one is added later, review it for false positives and keep its required attribution."
+    ]
+  },
+  "textEvidencedCategories": [
+    "sexual_content",
+    "sexual_violence",
+    "disturbing_content",
+    "suicide_self_harm",
+    "animal_harm",
+    "drugs",
+    "alcohol",
+    "language",
+    "physical_violence",
+    "horror"
+  ],
+  "visualOnlyCategories": [
+    "nudity",
+    "gore_graphic_violence",
+    "graphic_violence"
+  ],
+  "rules": [
+    {"id": "lang-strong-1", "category": "language", "pattern": "\\b(?:fuck|fucking|fucked|motherfucker|shit|bullshit|bitch|bastard|asshole|dickhead|prick|cunt)\\w*\\b", "note": "strong profanity"},
+    {"id": "lang-slur-1", "category": "language", "pattern": "\\b(?:faggot|retard|nigger|chink|paki)\\w*\\b", "note": "slur"},
+    {"id": "lang-mild-1", "category": "language", "pattern": "\\b(?:damn|hell|crap|arse|ass)\\b", "note": "mild profanity", "suppressNear": ["high school", "kick your ass", "assistant"]},
+
+    {"id": "alc-1", "category": "alcohol", "pattern": "\\b(?:alcohol|alcoholic|whisk(?:y|ey)|vodka|rum|brandy|tequila|beer|wine|booze)\\b", "note": "alcohol reference"},
+    {"id": "alc-2", "category": "alcohol", "pattern": "\\b(?:drunk|drunkard|hangover|intoxicated)\\b", "note": "intoxication"},
+    {"id": "alc-3", "category": "alcohol", "pattern": "\\b(?:bar|pub|tavern)\\b", "note": "drinking venue", "suppressNear": ["bar of soap", "barrier"]},
+
+    {"id": "drg-1", "category": "drugs", "pattern": "\\b(?:cocaine|heroin|marijuana|cannabis|meth(?:amphetamine)?|ecstasy|opium|fentanyl)\\b", "note": "named substance"},
+    {"id": "drg-2", "category": "drugs", "pattern": "\\b(?:overdose|overdosed|withdrawal|rehab|addict(?:ion)?)\\b", "note": "addiction or overdose"},
+    {"id": "drg-3", "category": "drugs", "pattern": "\\b(?:get high|getting high|stoned|snort(?:ing|ed)?|shooting up)\\b", "note": "recreational use"},
+
+    {"id": "sex-1", "category": "sexual_content", "pattern": "\\b(?:have sex|having sex|make love|making love|slept together|sleep together)\\b", "note": "sexual activity"},
+    {"id": "sex-2", "category": "sexual_content", "pattern": "\\b(?:naked|nude|undress(?:ed|ing)?|strip(?:ping|ped)?|take off your clothes)\\b", "note": "undressing or nudity reference", "suppressNear": ["naked truth", "stripped the paint"]},
+    {"id": "sex-3", "category": "sexual_content", "pattern": "\\b(?:prostitute|brothel|hooker|porn)\\w*\\b", "note": "sex work reference"},
+    {"id": "sex-4", "category": "sexual_content", "pattern": "\\b(?:sexy\\s+(?:girl|woman|chick|guy|man|body)|horny)\\b", "note": "sexualized remark"},
+
+    {"id": "sv-1", "category": "sexual_violence", "pattern": "\\b(?:rape[ds]?|raping|rapist)\\b", "note": "rape"},
+    {"id": "sv-2", "category": "sexual_violence", "pattern": "\\b(?:sexual assault|sexually assaulted|molest(?:ed|ing|er)?|sexual coercion)\\b", "note": "sexual assault"},
+    {"id": "sv-3", "category": "sexual_violence", "pattern": "\\b(?:touch(?:ed|ing) me there|forced himself|forced herself)\\b", "note": "implied sexual violence"},
+
+    {"id": "ssh-1", "category": "suicide_self_harm", "pattern": "\\b(?:suicide|suicidal|kill myself|killing myself|end my life|end it all)\\b", "note": "suicide reference"},
+    {"id": "ssh-2", "category": "suicide_self_harm", "pattern": "\\b(?:self[- ]harm|cut(?:ting)? myself|hurt myself)\\b", "note": "self-harm"},
+
+    {"id": "ani-1", "category": "animal_harm", "pattern": "\\b(?:animal cruelty|kill(?:ed|ing)? the dog|hurt the dog|poisoned the dog|beat the dog)\\b", "note": "animal harm", "suppressNear": ["hot dog"]},
+
+    {"id": "pv-1", "category": "physical_violence", "pattern": "\\b(?:punch(?:ed|ing)?|stab(?:bed|bing)?|shoot(?:ing|s)?|shot him|shot her|strangle[ds]?|beat(?:ing)? (?:him|her|them) up)\\b", "note": "physical violence"},
+    {"id": "pv-2", "category": "physical_violence", "pattern": "\\b(?:torture[ds]?|murder(?:ed|ing)?|kill(?:ed|ing)? (?:him|her|them)|domestic violence)\\b", "note": "severe violence", "suppressNear": ["killing me", "killing time", "you're killing"]},
+    {"id": "pv-3", "category": "physical_violence", "pattern": "\\b(?:gun|pistol|rifle|knife|blade)\\b", "note": "weapon present", "suppressNear": ["gun the engine", "knife and fork"]},
+
+    {"id": "dis-1", "category": "disturbing_content", "pattern": "\\b(?:dead body|corpse|mutilated|dismember(?:ed|ment)?|decapitat(?:ed|ion))\\b", "note": "disturbing imagery reference"},
+    {"id": "dis-2", "category": "disturbing_content", "pattern": "\\b(?:buried alive|drowned|lifeless)\\b", "note": "disturbing event"},
+
+    {"id": "hor-1", "category": "horror", "pattern": "\\b(?:ghost|demon|possessed|exorcis(?:m|t)|haunted|evil spirit)\\b", "note": "supernatural horror"},
+    {"id": "hor-2", "category": "horror", "pattern": "\\b(?:scream(?:ing|ed|s)?|terrified|nightmare)\\b", "note": "fear response", "suppressNear": ["scream of laughter"]}
+  ]
+}

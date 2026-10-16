@@ -96,4 +96,19 @@
 .adm-flag-form textarea{resize:vertical}
 .adm-review-flag{border-left:3px solid #d99a45;padding-left:14px;margin:20px 0}
 .adm-review-error{color:#ffd0d0}
+.subtitle-estimate{margin-top:18px;padding:16px;border:1px solid #68607c;border-radius:12px;background:#24212e;max-width:100%}
+.subtitle-estimate-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.subtitle-estimate-title h3{margin:0;font-size:16px;color:#f2ebfa}
+.subtitle-estimate-title strong{color:#dfd0ff;white-space:nowrap}
+.subtitle-estimate p{line-height:1.55}
+.subtitle-estimate details summary{cursor:pointer;color:#ded2f3;min-height:32px}
+.subtitle-admin{max-width:850px;overflow-wrap:anywhere}
+.subtitle-search{margin:20px 0}
+.subtitle-search input{width:min(100%,420px);min-width:0;min-height:44px;padding:9px;background:#191b22;color:#f7ebd5;border:1px solid #8e859b;border-radius:6px}
+.subtitle-factors{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.subtitle-factors>div{padding:10px;background:#24212e;border-radius:6px}
+.subtitle-factors dd{margin:5px 0 0}
+.subtitle-admin input[type=checkbox]{width:20px;height:20px;vertical-align:middle;margin-right:8px}
+.subtitle-admin :is(button,input,select,textarea):focus-visible,.subtitle-estimate summary:focus-visible{outline:3px solid #cab2fa;outline-offset:3px}
+.adm-tabs{flex-wrap:wrap}
 .adm-tabs button:focus-visible,.adm-review-link:focus-visible,.adm-review-detail button:focus-visible,.adm-flag-form select:focus-visible,.adm-flag-form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
