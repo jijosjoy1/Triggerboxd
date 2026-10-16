@@ -135,7 +135,7 @@ export function AdminDashboard() {
     <section aria-labelledby="adm-assessments">
       <h2 id="adm-assessments">Recent assessments</h2>
       {data.recentAssessments.length === 0 ? empty('No assessments yet.') : <ul className="adm-list">{data.recentAssessments.map(item => <li key={item.id}>
-        <button type="button" id={`adm-open-review-${item.id}`} className="adm-review-link" aria-expanded={selectedReview === item.id} onClick={() => setSelectedReview(value => value === item.id ? null : item.id)}>{item.filmTitle} — view review</button>
+        <button type="button" id={`adm-open-review-${item.id}`} className="adm-review-link" aria-expanded={selectedReview === item.id} onClick={() => setSelectedReview(value => value === item.id ? null : item.id)}>{item.filmTitle} · view review</button>
         <span className="fine">Submitted {shortDate(item.submittedAt)}{item.edited ? ` · updated ${shortDate(item.updatedAt)}` : ' · not edited since'}</span>
         <span className="adm-ratings">{item.categories.length === 0 ? 'No category ratings' : item.categories.map(rating => `${categoryName(rating.category)}: ${SEVERITY_WORDS[rating.severity] ?? 'Unknown'}`).join(' · ')}{item.categoryCount > item.categories.length ? ` · +${item.categoryCount - item.categories.length} more` : ''}</span>
         {tab === 'overview' && selectedReview === item.id ? <AdminReviewDetails key={`${userId}:${item.id}`} reviewId={item.id} accountId={userId} onClose={() => { setSelectedReview(null); document.getElementById(`adm-open-review-${item.id}`)?.focus(); }} onChanged={setModerationNotice} /> : null}

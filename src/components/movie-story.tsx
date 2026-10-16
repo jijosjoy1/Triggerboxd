@@ -82,7 +82,7 @@ export function MovieStory({movieId,title,posterPath,backdropPath,year,genres,wa
     setBusy(true);setMessage('');
     try{
       // The PNG is prepared before the tap, preserving browser user activation.
-      await navigator.share({files:[file],title:`${title} — Triggerboxd`,text:`Find detailed trigger warnings: ${link}`});
+      await navigator.share({files:[file],title:`${title} | Triggerboxd`,text:`Find detailed trigger warnings: ${link}`});
       if(version===generation.current)setMessage('Card sent to the share menu. Finish your Story in Instagram.');
     }catch(e){if(version===generation.current)setMessage(e instanceof Error&&e.name==='AbortError'?'Sharing cancelled.': 'Sharing failed. Save the PNG and upload it to your Story.');}
     finally{if(version===generation.current)setBusy(false);}

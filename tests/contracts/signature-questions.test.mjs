@@ -114,9 +114,9 @@ test('serious harm switches every humorous verdict to factual intensity language
 
 test('ordinary reports keep the entertaining verdicts', () => {
   const playful = question => catalog.getSignatureVerdict(question, 0, 0, false);
-  assert.equal(playful('biryani'), 'Eat peacefully — no graphic imagery reported.');
-  assert.equal(playful('animal-harm'), 'John can relax — no animal harm reported.');
-  assert.equal(playful('language'), 'Sunday school vocabulary — no profanity reported.');
+  assert.equal(playful('biryani'), 'Eat peacefully. No graphic imagery reported.');
+  assert.equal(playful('animal-harm'), 'John can relax. No animal harm reported.');
+  assert.equal(playful('language'), 'Sunday school vocabulary. No profanity reported.');
   assert.equal(catalog.getFamilyAwkwardnessVerdict(1, 0), 'Even grandma can join.');
   assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, false), 'Even the biryani wants to leave.');
   assert.equal(catalog.getSignatureVerdict('biryani', 3, 0, true), 'Strong or sustained graphic imagery reported.');

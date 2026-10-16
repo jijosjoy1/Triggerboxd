@@ -60,7 +60,7 @@ export function AdminReviewDetails({ reviewId, accountId, onClose, onChanged }: 
     {error ? <p role="alert" className="adm-review-error">{error} <button type="button" className="mvp-secondary" disabled={busy} onClick={() => setVersion(value => value + 1)}>Reload review</button></p> : null}
     {message ? <p role="status">{message}</p> : null}
     {review && !loading ? <>
-      <p><a href={`/movies/${review.movieId}/`}>{review.filmTitle} — open film guide</a></p>
+      <p><a href={`/movies/${review.movieId}/`}>{review.filmTitle} · open film guide</a></p>
       <p className="fine">Nickname: {review.nickname} · {review.watched ? 'Marked watched' : 'Not marked watched'} · {review.visibility}</p>
       <p className="fine">Submitted {formatIstTime(review.submittedAt)} · Last updated {formatIstTime(review.updatedAt)}</p>
       <p className="fine">All submitted category ratings are shown below. Missing categories were not assessed.</p>
@@ -68,7 +68,7 @@ export function AdminReviewDetails({ reviewId, accountId, onClose, onChanged }: 
         {review.categories.map(rating => <tr key={rating.category}><th scope="row">{reviewCategoryName(rating.category)}</th><td>{SEVERITIES[rating.severity] ?? 'Unknown'} ({rating.severity}/5){rating.spoilerLevel > 0 ? <span className="fine"> · Spoiler-protected in public views</span> : null}</td></tr>)}
       </tbody></table></div>
       {!review.categories.length ? <p>No category ratings in this review.</p> : null}
-      {review.flag ? <div className="adm-review-flag"><strong>{review.flag.status === 'open' ? 'Flagged for review' : 'Flag resolved'}</strong><p>{REVIEW_FLAG_REASONS[review.flag.reason]}</p>{review.flag.note ? <p>{review.flag.note}</p> : null}{review.flag.reviewRevision !== review.revision ? <p>Edited since flagging — check the current ratings above.</p> : null}</div> : null}
+      {review.flag ? <div className="adm-review-flag"><strong>{review.flag.status === 'open' ? 'Flagged for review' : 'Flag resolved'}</strong><p>{REVIEW_FLAG_REASONS[review.flag.reason]}</p>{review.flag.note ? <p>{review.flag.note}</p> : null}{review.flag.reviewRevision !== review.revision ? <p>Edited since flagging. Check the current ratings above.</p> : null}</div> : null}
       <p className="fine">A different perspective is not evidence of abuse. Flags are private to admins and do not hide reviews or change ratings.</p>
       {editing ? <form className="adm-flag-form" onSubmit={event => { event.preventDefault(); void moderate('flag'); }}>
         <label>Reason for flagging<select required value={reason} disabled={busy} onChange={event => setReason(event.target.value as ReviewFlagReason)}><option value="">Choose a reason</option>{Object.entries(REVIEW_FLAG_REASONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>

@@ -52,7 +52,7 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'Eat peacefully — no graphic imagery reported.',
+      'Eat peacefully. No graphic imagery reported.',
       "Maybe don’t watch while chewing.",
       'You might want to put that spoon down.',
       "Even the biryani wants to leave.",
@@ -99,7 +99,7 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: true,
     scale: 'content-severity',
     verdicts: [
-      'John can relax — no animal harm reported.',
+      'John can relax. No animal harm reported.',
       'John is getting suspicious.',
       'John is reaching for his suit.',
       'John Wick is coming.',
@@ -177,7 +177,7 @@ export const signatureQuestions: readonly SignatureQuestion[] = [
     initiallyVisible: false,
     scale: 'content-severity',
     verdicts: [
-      'Sunday school vocabulary — no profanity reported.',
+      'Sunday school vocabulary. No profanity reported.',
       'A few spicy words.',
       'The subtitles need censoring.',
       'Your English teacher would resign.',

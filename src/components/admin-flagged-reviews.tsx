@@ -29,7 +29,7 @@ export function AdminFlaggedReviews({ accountId }: { accountId: string }) {
     <h2 id="flagged-review-heading">Flagged reviews</h2><p className="fine">{total} awaiting review. Flags are suspicions to investigate, not findings that a review is fake.</p>
     {message ? <p role="status">{message}</p> : null}
     {!reviews.length ? <p>No flagged reviews. Admins can flag a review from Recent assessments.</p> : <ul className="adm-list">{reviews.map(review => <li key={review.id}>
-      <button type="button" id={`adm-open-flag-${review.id}`} className="adm-review-link" aria-expanded={selected === review.id} onClick={() => setSelected(value => value === review.id ? null : review.id)}>{review.filmTitle} — view review</button>
+      <button type="button" id={`adm-open-flag-${review.id}`} className="adm-review-link" aria-expanded={selected === review.id} onClick={() => setSelected(value => value === review.id ? null : review.id)}>{review.filmTitle} · view review</button>
       <span>{REVIEW_FLAG_REASONS[review.reason]}</span>{review.note ? <p>{review.note}</p> : null}
       <span className="fine">Flagged {formatIstTime(review.flaggedAt)}{review.reviewChanged ? ' · Edited since flagging' : ''}</span>
       {selected === review.id ? <AdminReviewDetails reviewId={review.id} accountId={accountId} onClose={() => { setSelected(null); document.getElementById(`adm-open-flag-${review.id}`)?.focus(); }} onChanged={notice => { setMessage(notice); setVersion(value => value + 1); }} /> : null}
