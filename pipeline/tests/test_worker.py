@@ -191,6 +191,27 @@ class ClientTests(unittest.TestCase):
         from tbpipe.worker import NoRedirect
         self.assertIsNone(NoRedirect().redirect_request(None, None, 302, "", {}, "https://other"))
 
+    def test_request_sends_a_descriptive_user_agent(self):
+        # Cloudflare terminates Python's default User-Agent with HTTP 403
+        # "error code: 1010" (banned browser signature), which made every poll
+        # fail as service_error until the worker identified itself.
+        from tbpipe.worker import USER_AGENT
+        client = Client("https://triggerboxd.com", "s" * 32)
+        captured = {}
+
+        class Capture:
+            def open(self, req, timeout=None):
+                captured["ua"] = req.get_header("User-agent")
+                captured["auth"] = req.get_header("Authorization")
+                raise RuntimeError("stop here")
+
+        client.opener = Capture()
+        with self.assertRaises(JobError):
+            client.call({"action": "claim"})
+        self.assertEqual(captured["ua"], USER_AGENT)
+        self.assertNotIn("urllib", (captured["ua"] or "").lower())
+        self.assertTrue(captured["auth"].startswith("Bearer "))
+
 
 if __name__ == "__main__":
     unittest.main()

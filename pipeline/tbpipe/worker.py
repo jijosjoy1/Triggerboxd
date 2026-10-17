@@ -22,6 +22,11 @@ ROOT = Path(__file__).resolve().parents[1]
 LIMITS = {"subdl": {"search": 1900, "download": 250},
           "opensubtitles": {"search": 1000, "download": 4}}
 
+# Cloudflare terminates Python's default User-Agent with HTTP 403 "error code:
+# 1010" (banned browser signature), so the worker identifies itself explicitly.
+# Verified against production: Python-urllib/3.13 -> 403, this value -> 200.
+USER_AGENT = "triggerboxd-pipeline/0.1 (private subtitle worker)"
+
 
 class JobError(Exception):
     pass
@@ -49,6 +54,7 @@ class Client:
     def call(self, body: dict) -> dict:
         req = urllib.request.Request(self.url, data=json.dumps(body).encode(), method="POST",
                                      headers={"Authorization": "Bearer " + self.token,
+                                              "User-Agent": USER_AGENT,
                                               "Content-Type": "application/json"})
         try:
             with self.opener.open(req, timeout=30) as response:
